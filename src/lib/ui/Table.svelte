@@ -7,24 +7,34 @@
     import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
     import RowMenu from './RowMenu.svelte';
     import { ChevronsUpDown } from '@lucide/svelte';
-    import { OPEN_STATUSES, STATUS_LABELS } from '../status';
+    import { OPEN_STATUSES, STATUS_LABELS, type ProjectStatus } from '../status';
+    import { projectLabel, type ProjectRow as Row } from '../project';
 
-    type Row = { project: string; customer: string; note: string };
     type Props = {
         data: Row[];
         tasks?: TaskItem[];
+        onstatus?: (row: Row, status: ProjectStatus) => void;
+        onnote?: (row: Row, note: string) => void;
+        onproject?: (row: Row, value: { name: string; detail: string }) => void;
+        oncustomer?: (row: Row, value: { customer: string; detail: string }) => void;
+        onwon?: (row: Row, value: { closedAt: string; amount: number; note: string }) => void;
+        onlost?: (row: Row, value: { closedAt: string; reason: string }) => void;
         ondelete?: (row: Row) => void;
         ontasktoggle?: (task: TaskItem) => void;
-        ontaskadd?: (project: string, input: { title: string; dueDate: string }) => void;
+        ontaskadd?: (projectId: string, input: { title: string; dueDate: string }) => void;
         ontaskdelete?: (task: TaskItem) => void;
     };
-    const { data, tasks = [], ondelete, ontasktoggle, ontaskadd, ontaskdelete }: Props = $props();
+    const {
+        data, tasks = [], onstatus, onnote, onproject, oncustomer, onwon, onlost, ondelete,
+        ontasktoggle, ontaskadd, ontaskdelete
+    }: Props = $props();
 
     type DialogKind = 'project' | 'customer' | 'task' | 'won' | 'lost' | 'delete';
     let dialog = $state.raw<{ kind: DialogKind; row: Row } | null>(null);
     const closeDialog = () => dialog = null;
     const openTaskCount = (row: Row) =>
-        tasks.filter((t) => t.project === row.project && !t.doneAt).length;
+        tasks.filter((t) => t.projectId === row.id && !t.doneAt).length;
+    const isOpen = (status: ProjectStatus) => (OPEN_STATUSES as readonly string[]).includes(status);
 </script>
 
 <table>
@@ -55,22 +65,28 @@
         </tr>
     </thead>
     <tbody>
-        {#each data as d}
+        {#each data as d (d.id)}
             <tr>
-                <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{d.project}</button></td>
+                <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{projectLabel(d)}</button></td>
                 <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{d.customer}</button></td>
                 <td>
-                    <select>
-                        {#each OPEN_STATUSES as st (st)}
-                            <option value={st}>{STATUS_LABELS[st]}</option>
-                        {/each}
-                    </select>
+                    {#if isOpen(d.status)}
+                        <select value={d.status}
+                            onchange={(e) => onstatus?.(d, e.currentTarget.value as ProjectStatus)}>
+                            {#each OPEN_STATUSES as st (st)}
+                                <option value={st}>{STATUS_LABELS[st]}</option>
+                            {/each}
+                        </select>
+                    {:else}
+                        <span class="closed">{STATUS_LABELS[d.status]}</span>
+                    {/if}
                 </td>
                 <td class="number">
                     <button class="text-link" onclick={() => dialog = { kind: 'task', row: d }}>{openTaskCount(d)}</button>
                 </td>
                 <td>
-                    <input type="text" class="note" value="{d.note}" />
+                    <input type="text" class="note" value={d.note}
+                        onchange={(e) => onnote?.(d, e.currentTarget.value)} />
                 </td>
                 <td>
                     <RowMenu
@@ -85,21 +101,23 @@
 </table>
 
 {#if dialog?.kind === 'project'}
-    <ProjectDialog {closeDialog} />
+    <ProjectDialog {closeDialog} name={dialog.row.name} detail={dialog.row.projectDetail}
+        onsubmit={(value) => onproject?.(dialog!.row, value)} />
 {:else if dialog?.kind === 'customer'}
-    <CustomerDialog {closeDialog} />
+    <CustomerDialog {closeDialog} customer={dialog.row.customer} detail={dialog.row.customerDetail}
+        onsubmit={(value) => oncustomer?.(dialog!.row, value)} />
 {:else if dialog?.kind === 'task'}
-    <TaskDialog {closeDialog} title="Tasks - {dialog.row.project}"
-        tasks={tasks.filter((t) => t.project === dialog!.row.project)}
+    <TaskDialog {closeDialog} title="Tasks - {projectLabel(dialog.row)}"
+        tasks={tasks.filter((t) => t.projectId === dialog!.row.id)}
         ontoggle={ontasktoggle}
         ondelete={ontaskdelete}
-        onadd={(input) => ontaskadd?.(dialog!.row.project, input)} />
+        onadd={(input) => ontaskadd?.(dialog!.row.id, input)} />
 {:else if dialog?.kind === 'won'}
-    <WonDialog {closeDialog} />
+    <WonDialog {closeDialog} onsubmit={(value) => onwon?.(dialog!.row, value)} />
 {:else if dialog?.kind === 'lost'}
-    <LostDialog {closeDialog} />
+    <LostDialog {closeDialog} onsubmit={(value) => onlost?.(dialog!.row, value)} />
 {:else if dialog?.kind === 'delete'}
-    <DeleteConfirmDialog {closeDialog} projectName={dialog.row.project}
+    <DeleteConfirmDialog {closeDialog} projectName={projectLabel(dialog.row)}
         onconfirm={() => ondelete?.(dialog!.row)} />
 {/if}
 
@@ -156,6 +174,11 @@
         border-bottom: 2px solid #999;
         padding: 0 2px 2px 2px;
         cursor: pointer;
+    }
+    span.closed {
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
     }
     select {
         padding: 4px;

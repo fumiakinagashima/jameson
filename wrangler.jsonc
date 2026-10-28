@@ -11,5 +11,13 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "jameson",
+			"database_id": "36cc981c-8bd1-4556-856d-eeba6664b3b5",
+			"migrations_dir": "drizzle"
+		}
+	]
 }

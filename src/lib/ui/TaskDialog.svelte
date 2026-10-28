@@ -1,11 +1,12 @@
 <script lang="ts" module>
     export type TaskItem = {
         id: string;
-        project: string;
+        projectId: string;
+        projectName: string;
         title: string;
         // 'YYYY-MM-DD'. Null means no due date.
         dueDate: string | null;
-        // 'YYYY-MM-DD'. Null means still open.
+        // ISO timestamp. Null means still open.
         doneAt: string | null;
     };
 </script>
@@ -30,6 +31,7 @@
 
     // Local date as 'YYYY-MM-DD'.
     const today = () => new Date().toLocaleDateString('sv-SE');
+    const day = (iso: string) => new Date(iso).toLocaleDateString('sv-SE');
 
     let newTitle = $state<string>('');
     let newDueDate = $state<string>(today());
@@ -63,7 +65,7 @@
                     <input type="checkbox" checked={!!t.doneAt} disabled={!ontoggle}
                         onchange={() => ontoggle?.(t)} />
                     <span class="title">{t.title}</span>
-                    {#if showProject}<span class="project">{t.project}</span>{/if}
+                    {#if showProject}<span class="project">{t.projectName}</span>{/if}
                     <span class="date">{dateOf(t) ?? '-'}</span>
                     {#if ondelete}
                         <button class="trash" title="Delete task" onclick={() => ondelete(t)}>
@@ -94,7 +96,7 @@
         </section>
         <section>
             <p>Done</p>
-            {@render rows(done, (t) => t.doneAt, 'No completed tasks yet.')}
+            {@render rows(done, (t) => (t.doneAt ? day(t.doneAt) : null), 'No completed tasks yet.')}
         </section>
     </main>
     <footer>

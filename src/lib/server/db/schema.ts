@@ -15,9 +15,9 @@ export const project = sqliteTable('project', {
 	id: id(),
 	// Optional. When empty, the UI shows the customer name instead.
 	name: text('name').notNull().default(''),
-	projectDetail: text('project_detail').notNull(),
+	projectDetail: text('project_detail').notNull().default(''),
 	customer: text('customer').notNull(),
-	customerDetail: text('customer_detail').notNull(),
+	customerDetail: text('customer_detail').notNull().default(''),
 	status: text('status', { enum: PROJECT_STATUSES }).notNull().default('lead'),
 	// Final amount in minor currency units (e.g. cents), set only when the project is won.
 	// Stays 0 while open or lost; any expected amount is written as text in projectDetail.
@@ -25,7 +25,7 @@ export const project = sqliteTable('project', {
 	amount: integer('amount').notNull().default(0),
 	// Contact person on the customer side.
 	contact: text('contact').notNull().default(''),
-	memo: text('memo').notNull().default(''),
+	note: text('note').notNull().default(''),
 	// Set when the project is marked won or lost. Null while open.
 	closedAt: integer('closed_at', { mode: 'timestamp_ms' }),
 	// Note on the win, or the reason for the loss.

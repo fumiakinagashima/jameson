@@ -1,19 +1,37 @@
 <script lang="ts">
     import Dialog from './Dialog.svelte';
-    const { closeDialog } = $props();
+
+    type Props = {
+        closeDialog: () => void;
+        name: string;
+        detail: string;
+        onsubmit?: (value: { name: string; detail: string }) => void;
+    };
+    const { closeDialog, name, detail, onsubmit }: Props = $props();
+
+    // The dialog is created each time it opens, so the initial values are all that is needed.
+    // svelte-ignore state_referenced_locally
+    let inputName = $state<string>(name);
+    // svelte-ignore state_referenced_locally
+    let inputDetail = $state<string>(detail);
+
+    const submit = () => {
+        onsubmit?.({ name: inputName.trim(), detail: inputDetail });
+        closeDialog();
+    };
 </script>
 
 <Dialog {closeDialog}>
     <header>
-        <input name="project-name" placeholder="Input project name" value="Project Name" />
+        <input name="project-name" placeholder="Input project name" bind:value={inputName} />
     </header>
     <main>
         <p>Detail</p>
-        <textarea></textarea>
+        <textarea bind:value={inputDetail}></textarea>
     </main>
     <footer>
         <button class="cancel" onclick={closeDialog}>Cancel</button>
-        <button class="ok" onclick={closeDialog}>OK</button>
+        <button class="ok" onclick={submit}>OK</button>
     </footer>
 </Dialog>
 

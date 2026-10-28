@@ -1,19 +1,37 @@
 <script lang="ts">
     import Dialog from './Dialog.svelte';
-    const { closeDialog } = $props();
+
+    type Props = {
+        closeDialog: () => void;
+        customer: string;
+        detail: string;
+        onsubmit?: (value: { customer: string; detail: string }) => void;
+    };
+    const { closeDialog, customer, detail, onsubmit }: Props = $props();
+
+    // The dialog is created each time it opens, so the initial values are all that is needed.
+    // svelte-ignore state_referenced_locally
+    let inputCustomer = $state<string>(customer);
+    // svelte-ignore state_referenced_locally
+    let inputDetail = $state<string>(detail);
+
+    const submit = () => {
+        onsubmit?.({ customer: inputCustomer.trim(), detail: inputDetail });
+        closeDialog();
+    };
 </script>
 
 <Dialog {closeDialog}>
     <header>
-        <input name="customer-name" placeholder="Input customer name" value="Customer Name" />
+        <input name="customer-name" placeholder="Input customer name" bind:value={inputCustomer} />
     </header>
     <main>
         <p>Detail</p>
-        <textarea></textarea>
+        <textarea bind:value={inputDetail}></textarea>
     </main>
     <footer>
         <button class="cancel" onclick={closeDialog}>Cancel</button>
-        <button class="ok" onclick={closeDialog}>OK</button>
+        <button class="ok" onclick={submit} disabled={!inputCustomer.trim()}>OK</button>
     </footer>
 </Dialog>
 
@@ -63,6 +81,10 @@
         &.ok {
             background-color: #4090ea;
             color: #fff;
+            &:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
         }
         &.cancel {
             background-color: #ddd;
