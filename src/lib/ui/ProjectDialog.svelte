@@ -1,42 +1,23 @@
 <script lang="ts">
+    import Dialog from './Dialog.svelte';
     const { closeDialog } = $props();
 </script>
 
-<div class="wrap">
-    <div class="board">
-        <header>
-            <input name="project-name" placeholder="Input project name" value="Project Name" />
-        </header>
-        <main>
-            <p>Detail</p>
-            <textarea></textarea>
-        </main>
-        <footer>
-            <button class="cancel" onclick={closeDialog}>Cancel</button>
-            <button class="ok" onclick={closeDialog}>OK</button>
-        </footer>
-    </div>
-</div>
+<Dialog {closeDialog}>
+    <header>
+        <input name="project-name" placeholder="Input project name" value="Project Name" />
+    </header>
+    <main>
+        <p>Detail</p>
+        <textarea></textarea>
+    </main>
+    <footer>
+        <button class="cancel" onclick={closeDialog}>Cancel</button>
+        <button class="ok" onclick={closeDialog}>OK</button>
+    </footer>
+</Dialog>
 
 <style lang="scss">
-    .wrap {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 24px;
-        z-index: 9999;
-    }
-    .board {
-        background-color: #f9f9f9;
-        border-radius: 6px;
-        min-width: 520px;
-    }
     header {
         padding: 12px 24px;
         border-bottom: 1px solid #ddd;

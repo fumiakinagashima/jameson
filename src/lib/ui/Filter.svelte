@@ -1,37 +1,21 @@
 <script lang="ts">
     import { RefreshCw, X } from '@lucide/svelte';
+    import { PROJECT_STATUSES, STATUS_LABELS } from '../status';
 </script>
 
 <div class="wrap">
     <div>
-        <label for="project">Project</label>
-        <input type="text" name="project" />
-    </div>
-    <div>
-        <label for="customer">Customer</label>
-        <input type="text" name="customer" />
+        <label for="text">Filter text</label>
+        <input type="text" name="text" class="text" />
     </div>
     <div>
         <label for="status">Status</label>
-        <select name="status">
-            <option value="0"></option>
-            <option value="1">Pending</option>
+        <select id="status" name="status">
+            <option value=""></option>
+            {#each PROJECT_STATUSES as st (st)}
+                <option value={st}>{STATUS_LABELS[st]}</option>
+            {/each}
         </select>
-    </div>
-    <div>
-        <label for="status">forecast</label>
-        <select name="status">
-            <option value="0"></option>
-            <option value="1">20%</option>
-        </select>
-    </div>
-    <div>
-        <label for="representation">Representation</label>
-        <input type="text" name="representation" />
-    </div>
-    <div>
-        <label for="memo">Memo</label>
-        <input type="text" name="memo" class="memo" />
     </div>
     <div class="button-wrap">
         <button title="Reload search condition">
@@ -48,9 +32,9 @@
     .wrap {
         width: 100%;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: flex-end;
-        gap: 24px;
+        gap: 8px;
     }
     label {
         display: block;
@@ -72,7 +56,7 @@
         justify-content: center;
         align-items: center;
         border: 1px solid #bbb;
-        border-radius: 4px;
+        border-radius: 6px;
         color: #666;
         cursor: pointer;
         &:hover {
@@ -80,18 +64,18 @@
         }
     }
     select {
-        padding: 4px;
+        padding: 6px;
         border: 1px solid #bbb;
         border-radius: 6px;
         font-weight: 600;
     }
     input {
         width: 100%;
-        padding: 4px 8px;
+        padding: 6px 8px;
         border-radius: 4px;
         border: 1px solid #bbb;
     }
-    input.memo {
-        min-width: 250px;
+    input.text {
+        min-width: 350px;
     }
 </style>

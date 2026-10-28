@@ -1,26 +1,30 @@
 <script lang="ts">
     import ProjectDialog from './ProjectDialog.svelte';
-    import { Ellipsis, ChevronsUpDown } from '@lucide/svelte';
+    import CustomerDialog from './CustomerDialog.svelte';
+    import TaskDialog, { type TaskItem } from './TaskDialog.svelte';
+    import WonDialog from './WonDialog.svelte';
+    import LostDialog from './LostDialog.svelte';
+    import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
+    import RowMenu from './RowMenu.svelte';
+    import { ChevronsUpDown } from '@lucide/svelte';
+    import { OPEN_STATUSES, STATUS_LABELS } from '../status';
 
-    const status: { key: string; label: string }[] = [
-      { key:'0', label:'Unset' },
-      { key:'1', label:'Progress' },
-      { key:'2', label:'Pending'},
-      { key:'3', label:'Dealing'},
-      { key:'4', label:'Following'},
-    ];
+    type Row = { project: string; customer: string; note: string };
+    type Props = {
+        data: Row[];
+        tasks?: TaskItem[];
+        ondelete?: (row: Row) => void;
+        ontasktoggle?: (task: TaskItem) => void;
+        ontaskadd?: (project: string, input: { title: string; dueDate: string }) => void;
+        ontaskdelete?: (task: TaskItem) => void;
+    };
+    const { data, tasks = [], ondelete, ontasktoggle, ontaskadd, ontaskdelete }: Props = $props();
 
-    const data: { project: string; customer: string; representation: string; memo: string }[] = [
-        { project: 'My project', customer: 'Lucy Inc.', representation: 'John Smith', memo: '' },
-        { project: 'Second deal', customer: 'Enver Inc.', representation: 'Kelling Moth', memo: 'My customer' },
-        { project: 'St. James Gt', customer: 'Dublin riveties corporation', representation: 'Young', memo: '' },
-        { project: 'Independent', customer: 'Michil', representation: 'Nash Better', memo: '' },
-        { project: 'Very rare', customer: 'Midleton', representation: 'Slaint Emma', memo: '' },
-        { project: 'Whistler', customer: 'Boann', representation: 'Helis Node', memo: 'Waiting' },
-    ];
-
-    let openProjectDialog = $state<boolean>(false);
-    const closeDialog = () => openProjectDialog = false;
+    type DialogKind = 'project' | 'customer' | 'task' | 'won' | 'lost' | 'delete';
+    let dialog = $state.raw<{ kind: DialogKind; row: Row } | null>(null);
+    const closeDialog = () => dialog = null;
+    const openTaskCount = (row: Row) =>
+        tasks.filter((t) => t.project === row.project && !t.doneAt).length;
 </script>
 
 <table>
@@ -43,79 +47,80 @@
             </th>
             <th>
                 <button>
-                    Forecast <ChevronsUpDown size={16} />
+                    Task
                 </button>
             </th>
-            <th>
-                <button>
-                    Representation <ChevronsUpDown size={16} />
-                </button>
-            </th>
-            <th class="memo">Memo</th>
+            <th class="note">Note</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
         {#each data as d}
             <tr>
-                <td><button class="text-link" onclick={() => openProjectDialog = true }>{d.project}</button></td>
-                <td><button class="text-link">{d.customer}</button></td>
+                <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{d.project}</button></td>
+                <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{d.customer}</button></td>
                 <td>
                     <select>
-                        {#each status as st (st.key)}
-                            <option value={st.key}>{st.label}</option>
+                        {#each OPEN_STATUSES as st (st)}
+                            <option value={st}>{STATUS_LABELS[st]}</option>
                         {/each}
                     </select>
                 </td>
-                <td>
-                    <select>
-                        <option value='0'>0%</option>
-                        <option value='1'>20%</option>
-                        <option value='2'>50%</option>
-                        <option value='3'>80%</option>
-                        <option value='4'>100%</option>
-                    </select>
+                <td class="number">
+                    <button class="text-link" onclick={() => dialog = { kind: 'task', row: d }}>{openTaskCount(d)}</button>
                 </td>
                 <td>
-                    <button class="text-link">{d.representation}</button>
+                    <input type="text" class="note" value="{d.note}" />
                 </td>
                 <td>
-                    <input type="text" class="memo" value="{d.memo}" />
-                </td>
-                <td>
-                    <button class="icon-button">
-                        <Ellipsis size={16} />
-                    </button>
+                    <RowMenu
+                        onwon={() => dialog = { kind: 'won', row: d }}
+                        onlost={() => dialog = { kind: 'lost', row: d }}
+                        ondelete={() => dialog = { kind: 'delete', row: d }}
+                    />
                 </td>
             </tr>
         {/each}
     </tbody>
 </table>
 
-{#if openProjectDialog}
+{#if dialog?.kind === 'project'}
     <ProjectDialog {closeDialog} />
+{:else if dialog?.kind === 'customer'}
+    <CustomerDialog {closeDialog} />
+{:else if dialog?.kind === 'task'}
+    <TaskDialog {closeDialog} title="Tasks - {dialog.row.project}"
+        tasks={tasks.filter((t) => t.project === dialog!.row.project)}
+        ontoggle={ontasktoggle}
+        ondelete={ontaskdelete}
+        onadd={(input) => ontaskadd?.(dialog!.row.project, input)} />
+{:else if dialog?.kind === 'won'}
+    <WonDialog {closeDialog} />
+{:else if dialog?.kind === 'lost'}
+    <LostDialog {closeDialog} />
+{:else if dialog?.kind === 'delete'}
+    <DeleteConfirmDialog {closeDialog} projectName={dialog.row.project}
+        onconfirm={() => ondelete?.(dialog!.row)} />
 {/if}
 
 <style lang="scss">
     table {
         width: 100%;
         border-collapse: collapse;
-        border-radius: 6px;
         & th {
             background-color: #f2f3f3;
             border-bottom: 2px solid #e2e2e2;
             text-align: left;
             padding: 8px 12px;
             font-size: 14px;
-            border-radius: 6px;
             color: #080808;
-            &.project-name {
-                min-width: 260px;
+            &:first-of-type {
+                border-radius: 6px 0 0 0;
             }
-            &.customer {
-                min-width: 250px;
+            &:last-of-type {
+                border-radius: 0 6px 0 0;
             }
-            &.memo {
+            &.project-name, &.customer {
                 min-width: 250px;
             }
             & button {
@@ -137,6 +142,9 @@
             font-weight: 600;
             color: #313131;
             background-color: #fff;
+            &.number {
+                text-align: right;
+            }
         }
     }
     button.text-link {
@@ -160,16 +168,5 @@
         padding: 4px 8px;
         border-radius: 4px;
         border: 1px solid #bbb;
-    }
-    button.icon-button {
-        background: transparent;
-        border: 0;
-        border-radius: 8px;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
     }
 </style>
