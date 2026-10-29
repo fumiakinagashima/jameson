@@ -26,6 +26,7 @@ Jameson is for teams of about 1 to 5 people, so some usual CRM features are left
 - [SvelteKit](https://svelte.dev/docs/kit) 3 (Svelte 5) on Cloudflare Workers
 - [Cloudflare D1](https://developers.cloudflare.com/d1/) with [Drizzle ORM](https://orm.drizzle.team/)
 - [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/) for sign-in; the Worker verifies the Access JWT with [jose](https://github.com/panva/jose)
+- [Zod](https://zod.dev/) for validating form input
 - TypeScript, SCSS, Bun
 
 ## Requirements

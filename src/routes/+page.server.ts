@@ -3,21 +3,15 @@ import { env } from 'cloudflare:workers';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../lib/server/db';
 import { project, task } from '../lib/server/db/schema';
+import { readForm } from '../lib/server/form';
 import { parseListQuery } from '../lib/server/project-query';
 import { MINOR_UNIT, projectLabel } from '../lib/project';
-import { OPEN_STATUSES } from '../lib/status';
+import { forms } from '../lib/schemas';
 import type { Actions, PageServerLoad } from './$types';
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const database = () => getDb(env.DB);
 
 const actor = (locals: App.Locals) => locals.user?.sub ?? null;
-
-const str = (form: FormData, key: string) => {
-	const value = form.get(key);
-	return typeof value === 'string' ? value : '';
-};
 
 export const load: PageServerLoad = async ({ url }) => {
 	const db = database();
@@ -76,95 +70,90 @@ export const actions: Actions = {
 	},
 
 	updateProject: async ({ request, locals }) => {
-		const form = await request.formData();
+		const input = readForm(forms.updateProject, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, name, detail } = input.data;
 		await database()
 			.update(project)
-			.set({
-				name: str(form, 'name').trim(),
-				projectDetail: str(form, 'detail'),
-				updatedBy: actor(locals)
-			})
-			.where(eq(project.id, str(form, 'id')));
+			.set({ name, projectDetail: detail, updatedBy: actor(locals) })
+			.where(eq(project.id, id));
 	},
 
 	updateCustomer: async ({ request, locals }) => {
-		const form = await request.formData();
-		const customer = str(form, 'customer').trim();
-		if (!customer) return fail(400, { message: 'Customer name is required.' });
+		const input = readForm(forms.updateCustomer, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, customer, detail } = input.data;
 		await database()
 			.update(project)
-			.set({ customer, customerDetail: str(form, 'detail'), updatedBy: actor(locals) })
-			.where(eq(project.id, str(form, 'id')));
+			.set({ customer, customerDetail: detail, updatedBy: actor(locals) })
+			.where(eq(project.id, id));
 	},
 
 	updateStatus: async ({ request, locals }) => {
-		const form = await request.formData();
-		const status = OPEN_STATUSES.find((s) => s === str(form, 'status'));
-		// Won and Lost are set through their own actions.
-		if (!status) return fail(400, { message: 'Invalid status.' });
+		const input = readForm(forms.updateStatus, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, status } = input.data;
 		await database()
 			.update(project)
 			.set({ status, updatedBy: actor(locals) })
-			.where(eq(project.id, str(form, 'id')));
+			.where(eq(project.id, id));
 	},
 
 	updateNote: async ({ request, locals }) => {
-		const form = await request.formData();
+		const input = readForm(forms.updateNote, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, note } = input.data;
 		await database()
 			.update(project)
-			.set({ note: str(form, 'note'), updatedBy: actor(locals) })
-			.where(eq(project.id, str(form, 'id')));
+			.set({ note, updatedBy: actor(locals) })
+			.where(eq(project.id, id));
 	},
 
 	winProject: async ({ request, locals }) => {
-		const form = await request.formData();
-		const closedOn = str(form, 'closedOn');
-		const amount = Number(str(form, 'amount'));
-		if (!DATE.test(closedOn)) return fail(400, { message: 'Invalid date.' });
-		if (!Number.isFinite(amount) || amount < 0) return fail(400, { message: 'Invalid amount.' });
+		const input = readForm(forms.winProject, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, closedOn, amount, note } = input.data;
 		await database()
 			.update(project)
 			.set({
 				status: 'won',
 				closedOn,
 				amount: Math.round(amount * MINOR_UNIT),
-				closeNote: str(form, 'note'),
-				updatedBy: actor(locals),
+				closeNote: note,
+				updatedBy: actor(locals)
 			})
-			.where(eq(project.id, str(form, 'id')));
+			.where(eq(project.id, id));
 	},
 
 	loseProject: async ({ request, locals }) => {
-		const form = await request.formData();
-		const closedOn = str(form, 'closedOn');
-		if (!DATE.test(closedOn)) return fail(400, { message: 'Invalid date.' });
+		const input = readForm(forms.loseProject, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id, closedOn, reason } = input.data;
 		await database()
 			.update(project)
 			.set({
 				status: 'lost',
 				closedOn,
 				amount: 0,
-				closeNote: str(form, 'reason'),
-				updatedBy: actor(locals),
+				closeNote: reason,
+				updatedBy: actor(locals)
 			})
-			.where(eq(project.id, str(form, 'id')));
+			.where(eq(project.id, id));
 	},
 
 	deleteProject: async ({ request }) => {
-		const form = await request.formData();
-		const id = str(form, 'id');
+		const input = readForm(forms.byId, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id } = input.data;
 		const db = database();
 		await db.batch([db.delete(task).where(eq(task.projectId, id)), db.delete(project).where(eq(project.id, id))]);
 	},
 
 	addTask: async ({ request, locals }) => {
-		const form = await request.formData();
-		const title = str(form, 'title').trim();
-		const dueDate = str(form, 'dueDate');
-		if (!title) return fail(400, { message: 'Task title is required.' });
-		if (!DATE.test(dueDate)) return fail(400, { message: 'Invalid due date.' });
+		const input = readForm(forms.addTask, await request.formData());
+		if (!input.ok) return input.failure;
+		const { projectId, title, dueDate } = input.data;
 		const db = database();
-		const projectId = str(form, 'projectId');
 		const exists = await db.select({ id: project.id }).from(project).where(eq(project.id, projectId)).get();
 		if (!exists) return fail(404, { message: 'Project not found.' });
 		const by = actor(locals);
@@ -172,8 +161,9 @@ export const actions: Actions = {
 	},
 
 	toggleTask: async ({ request, locals }) => {
-		const form = await request.formData();
-		const id = str(form, 'id');
+		const input = readForm(forms.byId, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id } = input.data;
 		const db = database();
 		const current = await db.select({ doneAt: task.doneAt }).from(task).where(eq(task.id, id)).get();
 		if (!current) return fail(404, { message: 'Task not found.' });
@@ -184,7 +174,8 @@ export const actions: Actions = {
 	},
 
 	deleteTask: async ({ request }) => {
-		const form = await request.formData();
-		await database().delete(task).where(eq(task.id, str(form, 'id')));
+		const input = readForm(forms.byId, await request.formData());
+		if (!input.ok) return input.failure;
+		await database().delete(task).where(eq(task.id, input.data.id));
 	}
 };
