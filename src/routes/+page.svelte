@@ -4,12 +4,25 @@
     import TaskDialog from "#lib/ui/TaskDialog.svelte";
     import { Plus, Download, ListTodo } from '@lucide/svelte';
     import { deserialize } from '$app/forms';
-    import { invalidateAll } from '$app/navigation';
+    import { goto, refreshAll } from '$app/navigation';
+    import { resolve } from '$app/paths';
+    import { SvelteURLSearchParams } from 'svelte/reactivity';
     import type { PageProps } from './$types';
 
     const { data }: PageProps = $props();
     let openMyTasks = $state<boolean>(false);
     let message = $state<string>('');
+
+    // The filter lives in the URL (`?q=&status=`), so it survives reloads and can be shared.
+    const applyFilter = (filter: { text: string; status: string }) => {
+        const params = new SvelteURLSearchParams();
+        if (filter.text) params.set('q', filter.text);
+        if (filter.status) params.set('status', filter.status);
+        const query = params.toString();
+        // resolve() takes a route, not a query string, so it is applied to the path only.
+        // eslint-disable-next-line svelte/no-navigation-without-resolve
+        goto(resolve('/') + (query ? `?${query}` : ''), { replace: true, reset: false });
+    };
 
     // Calls a form action in +page.server.ts, then reloads the data.
     const act = async (name: string, values: Record<string, string> = {}) => {
@@ -29,14 +42,18 @@
         } catch {
             message = 'Network error.';
         }
-        await invalidateAll();
+        await refreshAll();
     };
 </script>
 
 <div class="wrap">
     <div class="actions">
         <div class="filter-wrap">
-            <Filter />
+            <Filter
+                text={data.filter.text}
+                status={data.filter.status}
+                onchange={applyFilter}
+                onclear={() => goto(resolve('/'), { reset: false })} />
         </div>
         <div class="operation-wrap">
             <button class="outline" onclick={() => openMyTasks = true}>
