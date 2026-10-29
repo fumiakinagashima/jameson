@@ -1,9 +1,10 @@
 <script lang="ts">
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
-    import { User, Settings } from '@lucide/svelte';
+    import { User, Settings, LogOut } from '@lucide/svelte';
 	import './app.scss';
-	let { children }: LayoutProps = $props();
+
+	let { children, data }: LayoutProps = $props();
 </script>
 
 <svelte:head>
@@ -14,7 +15,11 @@
     <p>JAMESON</p>
     <div class="menu">
         <button><Settings color="#fbfbfb" size={20} /></button>
-        <button><User color="#fbfbfb" size={20} /></button>
+        {#if data.user}
+            <span class="user"><User size={16} />{data.user.email}</span>
+            <!-- A full page load, so the request reaches Access instead of the SvelteKit router. -->
+            <a class="logout" href="/cdn-cgi/access/logout" rel="external"><LogOut size={16} />Logout</a>
+        {/if}
     </div>
 </header>
 {@render children()}
@@ -55,5 +60,20 @@
             font-weight: 500;
             cursor: pointer;
         }
+        & .user, & a.logout {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #f6f6f6;
+            font-size: 13px;
+            line-height: 1;
+        }
+        & a.logout {
+            text-decoration: none;
+            &:hover {
+                text-decoration: underline;
+            }
+        }
     }
+    
 </style>
