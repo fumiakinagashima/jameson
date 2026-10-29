@@ -1,5 +1,6 @@
 <script lang="ts">
     import Dialog from './Dialog.svelte';
+    import { m } from '../paraglide/messages.js';
 
     type Props = {
         closeDialog: () => void;
@@ -19,21 +20,21 @@
 
 <Dialog {closeDialog} width={480}>
     <header>
-        <h2>Lost</h2>
+        <h2>{m.mark_lost()}</h2>
     </header>
     <main>
         <div>
-            <label for="lost-date">Lost date</label>
+            <label for="lost-date">{m.lost_date()}</label>
             <input id="lost-date" type="date" bind:value={closedOn} />
         </div>
         <div>
-            <label for="lost-reason">Reason</label>
+            <label for="lost-reason">{m.reason()}</label>
             <textarea id="lost-reason" bind:value={reason}></textarea>
         </div>
     </main>
     <footer>
-        <button class="cancel" onclick={closeDialog}>Cancel</button>
-        <button class="ok" onclick={submit}>OK</button>
+        <button class="cancel" onclick={closeDialog}>{m.cancel()}</button>
+        <button class="ok" onclick={submit}>{m.ok()}</button>
     </footer>
 </Dialog>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Ellipsis, Trophy, CircleX, Trash2 } from '@lucide/svelte';
+    import { m } from '../paraglide/messages.js';
 
     type Props = {
         onwon?: () => void;
@@ -23,7 +24,7 @@
 />
 
 <div class="root" bind:this={root}>
-    <button class="icon-button" title="Commands" aria-haspopup="menu" aria-expanded={open}
+    <button class="icon-button" title={m.menu_commands()} aria-haspopup="menu" aria-expanded={open}
         onclick={() => open = !open}>
         <Ellipsis size={16} />
     </button>
@@ -31,18 +32,18 @@
         <ul class="menu" role="menu">
             <li role="none">
                 <button role="menuitem" onclick={() => run(onwon)}>
-                    <Trophy size={16} />Won
+                    <Trophy size={16} />{m.mark_won()}
                 </button>
             </li>
             <li role="none">
                 <button role="menuitem" onclick={() => run(onlost)}>
-                    <CircleX size={16} />Lost
+                    <CircleX size={16} />{m.mark_lost()}
                 </button>
             </li>
             <li role="none" class="separator"></li>
             <li role="none">
                 <button role="menuitem" class="danger" onclick={() => run(ondelete)}>
-                    <Trash2 size={16} />Delete
+                    <Trash2 size={16} />{m.delete()}
                 </button>
             </li>
         </ul>

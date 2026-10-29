@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '#lib/assets/favicon.svg';
+	import { m } from '#lib/paraglide/messages.js';
 	import type { LayoutProps } from './$types';
     import { User, LogOut } from '@lucide/svelte';
 	import './app.scss';
@@ -9,7 +10,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-    <title>JAMESON | Micro SFA</title>
+    <title>{m.app_title()}</title>
 </svelte:head>
 
 <header>
@@ -18,7 +19,7 @@
         {#if data.user}
             <span class="user"><User size={16} />{data.user.email}</span>
             <!-- A full page load, so the request reaches Access instead of the SvelteKit router. -->
-            <a class="logout" href="/cdn-cgi/access/logout" rel="external"><LogOut size={16} />Logout</a>
+            <a class="logout" href="/cdn-cgi/access/logout" rel="external"><LogOut size={16} />{m.logout()}</a>
         {/if}
     </div>
 </header>

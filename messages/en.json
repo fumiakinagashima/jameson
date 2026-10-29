@@ -1,0 +1,76 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"app_title": "JAMESON | Micro SFA",
+	"logout": "Logout",
+
+	"project_name": "Project name",
+	"customer": "Customer",
+	"status": "Status",
+	"task": "Task",
+	"note": "Note",
+	"detail": "Detail",
+	"amount": "Amount",
+	"reason": "Reason",
+	"tasks_title": "Tasks - {name}",
+
+	"status_lead": "Lead",
+	"status_proposal": "Proposal",
+	"status_negotiation": "Negotiation",
+	"status_pending": "Pending",
+	"status_won": "Won",
+	"status_lost": "Lost",
+
+	"filter_text": "Filter text",
+	"filter_open": "Open",
+	"filter_all": "All",
+	"clear_filter": "Clear search condition",
+
+	"my_tasks": "My Tasks",
+	"csv_download": "CSV Download",
+	"create": "Create",
+
+	"cancel": "Cancel",
+	"ok": "OK",
+	"close": "Close",
+	"add": "Add",
+	"delete": "Delete",
+
+	"input_project_name": "Input project name",
+	"input_customer_name": "Input customer name",
+
+	"menu_commands": "Commands",
+	"mark_won": "Won",
+	"mark_lost": "Lost",
+	"won_date": "Won date",
+	"lost_date": "Lost date",
+
+	"delete_project_title": "Delete project",
+	"delete_project_confirm": "Delete {name}?",
+	"delete_project_warning": "This cannot be undone. All tasks of this project will also be deleted.",
+
+	"add_task_placeholder": "Add a task",
+	"delete_task": "Delete task",
+	"upcoming": "Upcoming",
+	"done": "Done",
+	"no_upcoming_tasks": "No upcoming tasks.",
+	"no_done_tasks": "No completed tasks yet.",
+
+	"request_failed": "Request failed.",
+	"network_error": "Network error.",
+	"invalid_request": "Invalid request.",
+	"invalid_date": "Invalid date.",
+	"invalid_due_date": "Invalid due date.",
+	"invalid_amount": "Invalid amount.",
+	"invalid_status": "Invalid status.",
+	"customer_required": "Customer name is required.",
+	"task_title_required": "Task title is required.",
+	"project_name_too_long": "Project name is too long.",
+	"customer_name_too_long": "Customer name is too long.",
+	"task_title_too_long": "Task title is too long.",
+	"detail_too_long": "Detail is too long.",
+	"note_too_long": "Note is too long.",
+	"reason_too_long": "Reason is too long.",
+	"project_not_found": "Project not found.",
+	"task_not_found": "Task not found."
+}

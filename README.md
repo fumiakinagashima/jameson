@@ -14,7 +14,8 @@ You deploy it to your own Cloudflare account, so your data stays in your own dat
 - **Tasks per project**: next actions with a due date. Done tasks stay as a history. A cross-project task list is one click away.
 - **Filter**: free-text search over names, notes and details, plus a status filter. The filter lives in the URL, so a filtered view can be bookmarked or shared.
 - **Sorting** by project, customer or status (click a column header: ascending, descending, then back to newest first). Status sorts in pipeline order. The sort is part of the URL too.
-- **CSV export** of whatever the list is showing, in the same order.
+- **CSV export** of whatever the list is showing, in the same order. The CSV is always in English.
+- **Translations**: the language follows the browser's setting, with a plain JSON file per language. Only English exists so far; see [Adding a language](#adding-a-language).
 - **Sign-in with Cloudflare Access**: no passwords or user tables in the app. The header shows who is signed in, with a logout link.
 
 ### What it deliberately does not do
@@ -27,6 +28,7 @@ Jameson is for teams of about 1 to 5 people, so some usual CRM features are left
 - [Cloudflare D1](https://developers.cloudflare.com/d1/) with [Drizzle ORM](https://orm.drizzle.team/)
 - [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/) for sign-in; the Worker verifies the Access JWT with [jose](https://github.com/panva/jose)
 - [Zod](https://zod.dev/) for validating form input
+- [Paraglide JS](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) for translations
 - TypeScript, SCSS, Bun
 
 ## Requirements
@@ -135,6 +137,14 @@ bun run deploy     # build, apply migrations to the remote database, then deploy
 - Local secrets go in `.dev.vars` (git-ignored). Production secrets are set with `wrangler secret put`.
 - The database schema is in `src/lib/server/db/schema.ts`. After changing it, create a migration with `bun run db:generate` (it needs `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID` and `CLOUDFLARE_D1_TOKEN` set; see `.env.example`), then apply it with `wrangler d1 migrations apply`.
 
+### Adding a language
+
+All screen text lives in `messages/<language>.json`; the language is chosen from the browser's `Accept-Language` setting, and falls back to English.
+
+1. Add the language code to `locales` in `project.inlang/settings.json`.
+2. Copy `messages/en.json` to `messages/<code>.json` and translate the values. Keep the keys and the `{placeholders}`.
+3. Run `bun run dev`. The files under `src/lib/paraglide/` are generated from the JSON files; do not edit them.
+
 ### Notes on the data
 
 - Timestamps (`created_at`, `updated_at`, ...) are stored in UTC. Dates that a person picks, such as the due date or the won/lost date, are stored as plain `YYYY-MM-DD` with no time zone.
@@ -145,7 +155,7 @@ bun run deploy     # build, apply migrations to the remote database, then deploy
 
 This is an alpha. Known gaps:
 
-- English UI only. There is no i18n yet.
+- English UI only. The translation setup is in place, but no other language has been written yet.
 - The currency is not configurable; amounts assume two decimal places.
 - A Won or Lost project cannot be reopened yet.
 - No highlighting or reminders for tasks that are due soon.

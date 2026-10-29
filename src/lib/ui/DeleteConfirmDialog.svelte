@@ -1,5 +1,6 @@
 <script lang="ts">
     import Dialog from './Dialog.svelte';
+    import { m } from '../paraglide/messages.js';
 
     type Props = {
         closeDialog: () => void;
@@ -7,6 +8,10 @@
         onconfirm?: () => void;
     };
     const { closeDialog, projectName, onconfirm }: Props = $props();
+
+    // The name is shown in bold, so the sentence is split around where a translation puts it.
+    const NAME = '';
+    const [before, after = ''] = m.delete_project_confirm({ name: NAME }).split(NAME);
 
     const confirm = () => {
         onconfirm?.();
@@ -16,17 +21,17 @@
 
 <Dialog {closeDialog} width={440}>
     <header>
-        <h2>Delete project</h2>
+        <h2>{m.delete_project_title()}</h2>
     </header>
     <main>
-        <p>Delete <strong>{projectName}</strong>?</p>
+        <p>{before}<strong>{projectName}</strong>{after}</p>
         <p class="warning">
-            This cannot be undone. All tasks of this project will also be deleted.
+            {m.delete_project_warning()}
         </p>
     </main>
     <footer>
-        <button class="cancel" onclick={closeDialog}>Cancel</button>
-        <button class="delete" onclick={confirm}>Delete</button>
+        <button class="cancel" onclick={closeDialog}>{m.cancel()}</button>
+        <button class="delete" onclick={confirm}>{m.delete()}</button>
     </footer>
 </Dialog>
 

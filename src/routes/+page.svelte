@@ -7,6 +7,7 @@
     import { goto, refreshAll } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
+    import { m } from '#lib/paraglide/messages.js';
     import type { Sort, SortKey } from '#lib/project.ts';
     import type { PageProps } from './$types';
 
@@ -62,11 +63,11 @@
             });
             const result = deserialize(await res.text());
             message =
-                result.type === 'failure' ? String(result.data?.message ?? 'Request failed.')
+                result.type === 'failure' ? String(result.data?.message ?? m.request_failed())
                 : result.type === 'error' ? result.error.message
                 : '';
         } catch {
-            message = 'Network error.';
+            message = m.network_error();
         }
         await refreshAll();
     };
@@ -83,15 +84,15 @@
         </div>
         <div class="operation-wrap">
             <button class="outline" onclick={() => openMyTasks = true}>
-                <ListTodo size={16} />My Tasks
+                <ListTodo size={16} />{m.my_tasks()}
             </button>
 
             <button class="outline" onclick={downloadCsv}>
-                <Download size={16} />CSV Download
+                <Download size={16} />{m.csv_download()}
             </button>
 
             <button class="primary" onclick={() => act('createProject')}>
-                <Plus size={16} />Create
+                <Plus size={16} />{m.create()}
             </button>
         </div>
     </div>
@@ -119,7 +120,7 @@
 </div>
 
 {#if openMyTasks}
-    <TaskDialog closeDialog={() => openMyTasks = false} title="My Tasks" tasks={data.tasks} showProject
+    <TaskDialog closeDialog={() => openMyTasks = false} title={m.my_tasks()} tasks={data.tasks} showProject
         ontoggle={(task) => act('toggleTask', { id: task.id })}
         ondelete={(task) => act('deleteTask', { id: task.id })} />
 {/if}

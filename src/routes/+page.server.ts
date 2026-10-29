@@ -6,6 +6,7 @@ import { project, task } from '../lib/server/db/schema';
 import { readForm } from '../lib/server/form';
 import { parseListQuery } from '../lib/server/project-query';
 import { MINOR_UNIT, projectLabel } from '../lib/project';
+import { m } from '../lib/paraglide/messages.js';
 import { forms } from '../lib/schemas';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -155,7 +156,7 @@ export const actions: Actions = {
 		const { projectId, title, dueDate } = input.data;
 		const db = database();
 		const exists = await db.select({ id: project.id }).from(project).where(eq(project.id, projectId)).get();
-		if (!exists) return fail(404, { message: 'Project not found.' });
+		if (!exists) return fail(404, { message: m.project_not_found() });
 		const by = actor(locals);
 		await db.insert(task).values({ projectId, title, dueDate, createdBy: by, updatedBy: by });
 	},
@@ -166,7 +167,7 @@ export const actions: Actions = {
 		const { id } = input.data;
 		const db = database();
 		const current = await db.select({ doneAt: task.doneAt }).from(task).where(eq(task.id, id)).get();
-		if (!current) return fail(404, { message: 'Task not found.' });
+		if (!current) return fail(404, { message: m.task_not_found() });
 		await db
 			.update(task)
 			.set({ doneAt: current.doneAt ? null : new Date(), updatedBy: actor(locals) })

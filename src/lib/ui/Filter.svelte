@@ -1,6 +1,7 @@
 <script lang="ts">
     import { X } from '@lucide/svelte';
-    import { PROJECT_STATUSES, STATUS_LABELS } from '../status';
+    import { m } from '../paraglide/messages.js';
+    import { PROJECT_STATUSES, statusLabel } from '../status';
 
     type Props = {
         // The current filter, as loaded from the URL.
@@ -29,23 +30,23 @@
 
 <div class="wrap">
     <div>
-        <label for="text">Filter text</label>
+        <label for="text">{m.filter_text()}</label>
         <input id="text" type="text" name="text" class="text" bind:value={text}
             oninput={typing}
             onkeydown={(e) => e.key === 'Enter' && apply()} />
     </div>
     <div>
-        <label for="status">Status</label>
+        <label for="status">{m.status()}</label>
         <select id="status" name="status" bind:value={status} onchange={apply}>
-            <option value="">Open</option>
-            <option value="all">All</option>
+            <option value="">{m.filter_open()}</option>
+            <option value="all">{m.filter_all()}</option>
             {#each PROJECT_STATUSES as st (st)}
-                <option value={st}>{STATUS_LABELS[st]}</option>
+                <option value={st}>{statusLabel(st)}</option>
             {/each}
         </select>
     </div>
     <div class="button-wrap">
-        <button title="Clear search condition" onclick={onclear}>
+        <button title={m.clear_filter()} onclick={onclear}>
             <X size={20} />
         </button>
     </div>

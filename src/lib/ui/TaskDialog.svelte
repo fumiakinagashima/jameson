@@ -14,6 +14,7 @@
 <script lang="ts">
     import Dialog from './Dialog.svelte';
     import { Trash } from '@lucide/svelte';
+    import { m } from '../paraglide/messages.js';
 
     type Props = {
         closeDialog: () => void;
@@ -68,7 +69,7 @@
                     {#if showProject}<span class="project">{t.projectName}</span>{/if}
                     <span class="date">{dateOf(t) ?? '-'}</span>
                     {#if ondelete}
-                        <button class="trash" title="Delete task" onclick={() => ondelete(t)}>
+                        <button class="trash" title={m.delete_task()} onclick={() => ondelete(t)}>
                             <Trash size={16} />
                         </button>
                     {/if}
@@ -85,22 +86,22 @@
     <main>
         {#if onadd}
             <form onsubmit={add}>
-                <input type="text" class="new-title" placeholder="Add a task" bind:value={newTitle} />
+                <input type="text" class="new-title" placeholder={m.add_task_placeholder()} bind:value={newTitle} />
                 <input type="date" required bind:value={newDueDate} />
-                <button type="submit" class="add" disabled={!canAdd}>Add</button>
+                <button type="submit" class="add" disabled={!canAdd}>{m.add()}</button>
             </form>
         {/if}
         <section>
-            <p>Upcoming</p>
-            {@render rows(upcoming, (t) => t.dueDate, 'No upcoming tasks.')}
+            <p>{m.upcoming()}</p>
+            {@render rows(upcoming, (t) => t.dueDate, m.no_upcoming_tasks())}
         </section>
         <section>
-            <p>Done</p>
-            {@render rows(done, (t) => (t.doneAt ? day(t.doneAt) : null), 'No completed tasks yet.')}
+            <p>{m.done()}</p>
+            {@render rows(done, (t) => (t.doneAt ? day(t.doneAt) : null), m.no_done_tasks())}
         </section>
     </main>
     <footer>
-        <button class="close" onclick={closeDialog}>Close</button>
+        <button class="close" onclick={closeDialog}>{m.close()}</button>
     </footer>
 </Dialog>
 

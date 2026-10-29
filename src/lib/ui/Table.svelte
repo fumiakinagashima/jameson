@@ -7,7 +7,8 @@
     import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
     import RowMenu from './RowMenu.svelte';
     import { ChevronDown, ChevronUp, ChevronsUpDown } from '@lucide/svelte';
-    import { OPEN_STATUSES, STATUS_LABELS, type ProjectStatus } from '../status';
+    import { m } from '../paraglide/messages.js';
+    import { OPEN_STATUSES, statusLabel, type ProjectStatus } from '../status';
     import { projectLabel, type ProjectRow as Row, type Sort, type SortKey } from '../project';
 
     type Props = {
@@ -57,11 +58,11 @@
 <table>
     <thead>
         <tr>
-            <th class="project-name" aria-sort={ariaSort('project')}>{@render sortButton('project', 'Project name')}</th>
-            <th class="customer" aria-sort={ariaSort('customer')}>{@render sortButton('customer', 'Customer')}</th>
-            <th aria-sort={ariaSort('status')}>{@render sortButton('status', 'Status')}</th>
-            <th><span class="plain">Task</span></th>
-            <th class="note">Note</th>
+            <th class="project-name" aria-sort={ariaSort('project')}>{@render sortButton('project', m.project_name())}</th>
+            <th class="customer" aria-sort={ariaSort('customer')}>{@render sortButton('customer', m.customer())}</th>
+            <th aria-sort={ariaSort('status')}>{@render sortButton('status', m.status())}</th>
+            <th><span class="plain">{m.task()}</span></th>
+            <th class="note">{m.note()}</th>
             <th></th>
         </tr>
     </thead>
@@ -75,11 +76,11 @@
                         <select value={d.status}
                             onchange={(e) => onstatus?.(d, e.currentTarget.value as ProjectStatus)}>
                             {#each OPEN_STATUSES as st (st)}
-                                <option value={st}>{STATUS_LABELS[st]}</option>
+                                <option value={st}>{statusLabel(st)}</option>
                             {/each}
                         </select>
                     {:else}
-                        <span class="closed">{STATUS_LABELS[d.status]}</span>
+                        <span class="closed">{statusLabel(d.status)}</span>
                     {/if}
                 </td>
                 <td class="number">
@@ -108,7 +109,7 @@
     <CustomerDialog {closeDialog} customer={dialog.row.customer} detail={dialog.row.customerDetail}
         onsubmit={(value) => oncustomer?.(dialog!.row, value)} />
 {:else if dialog?.kind === 'task'}
-    <TaskDialog {closeDialog} title="Tasks - {projectLabel(dialog.row)}"
+    <TaskDialog {closeDialog} title={m.tasks_title({ name: projectLabel(dialog.row) })}
         tasks={tasks.filter((t) => t.projectId === dialog!.row.id)}
         ontoggle={ontasktoggle}
         ondelete={ontaskdelete}

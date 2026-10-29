@@ -3,9 +3,11 @@ import { MINOR_UNIT } from '../../lib/project';
 import { getDb } from '../../lib/server/db';
 import { project } from '../../lib/server/db/schema';
 import { parseListQuery } from '../../lib/server/project-query';
-import { STATUS_LABELS } from '../../lib/status';
+import { statusLabel } from '../../lib/status';
 import type { RequestHandler } from './$types';
 
+// The CSV is data, not screen text: the header and the status names stay in English
+// whatever language the browser uses.
 const HEADER = [
 	'Project',
 	'Customer',
@@ -55,7 +57,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		[
 			text(p.name),
 			text(p.customer),
-			STATUS_LABELS[p.status],
+			statusLabel(p.status, 'en'),
 			// The amount is only set once a project is won.
 			p.status === 'won' ? (p.amount / MINOR_UNIT).toFixed(Math.log10(MINOR_UNIT)) : '',
 			p.closedOn ?? '',
