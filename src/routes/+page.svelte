@@ -7,31 +7,47 @@
     import { goto, refreshAll } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
+    import type { Sort, SortKey } from '#lib/project.ts';
     import type { PageProps } from './$types';
 
     const { data }: PageProps = $props();
     let openMyTasks = $state<boolean>(false);
     let message = $state<string>('');
 
-    // The filter lives in the URL (`?q=&status=`), so it survives reloads and can be shared.
-    const filterQuery = (filter: { text: string; status: string }) => {
+    // The filter and the sort live in the URL (`?q=&status=&sort=&dir=`), so they survive
+    // reloads and can be shared.
+    type View = { text: string; status: string; sort: Sort };
+
+    const viewQuery = (view: View) => {
         const params = new SvelteURLSearchParams();
-        if (filter.text) params.set('q', filter.text);
-        if (filter.status) params.set('status', filter.status);
+        if (view.text) params.set('q', view.text);
+        if (view.status) params.set('status', view.status);
+        if (view.sort) {
+            params.set('sort', view.sort.key);
+            params.set('dir', view.sort.dir);
+        }
         const query = params.toString();
         return query ? `?${query}` : '';
     };
 
-    const applyFilter = (filter: { text: string; status: string }) => {
+    const showView = (view: View) => {
         // resolve() takes a route, not a query string, so it is applied to the path only.
         // eslint-disable-next-line svelte/no-navigation-without-resolve
-        goto(resolve('/') + filterQuery(filter), { replace: true, reset: false });
+        goto(resolve('/') + viewQuery(view), { replace: true, reset: false });
     };
 
-    // Downloads the projects on screen. The response is an attachment, so the browser
-    // saves it and stays on this page.
+    // Clicking a column cycles ascending, descending, then back to the default order.
+    const sortBy = (key: SortKey) => {
+        const current = data.sort;
+        const sort: Sort =
+            current?.key !== key ? { key, dir: 'asc' } : current.dir === 'asc' ? { key, dir: 'desc' } : null;
+        showView({ ...data.filter, sort });
+    };
+
+    // Downloads the projects on screen, in the same order. The response is an attachment,
+    // so the browser saves it and stays on this page.
     const downloadCsv = () => {
-        window.location.assign(`/export.csv${filterQuery(data.filter)}`);
+        window.location.assign(`/export.csv${viewQuery({ ...data.filter, sort: data.sort })}`);
     };
 
     // Calls a form action in +page.server.ts, then reloads the data.
@@ -62,8 +78,8 @@
             <Filter
                 text={data.filter.text}
                 status={data.filter.status}
-                onchange={applyFilter}
-                onclear={() => goto(resolve('/'), { reset: false })} />
+                onchange={(filter) => showView({ ...filter, sort: data.sort })}
+                onclear={() => showView({ text: '', status: '', sort: data.sort })} />
         </div>
         <div class="operation-wrap">
             <button class="outline" onclick={() => openMyTasks = true}>
@@ -86,6 +102,8 @@
         <Table
             data={data.projects}
             tasks={data.tasks}
+            sort={data.sort}
+            onsort={sortBy}
             onstatus={(row, status) => act('updateStatus', { id: row.id, status })}
             onnote={(row, note) => act('updateNote', { id: row.id, note })}
             onproject={(row, v) => act('updateProject', { id: row.id, name: v.name, detail: v.detail })}

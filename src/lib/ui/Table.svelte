@@ -6,13 +6,15 @@
     import LostDialog from './LostDialog.svelte';
     import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
     import RowMenu from './RowMenu.svelte';
-    import { ChevronsUpDown } from '@lucide/svelte';
+    import { ChevronDown, ChevronUp, ChevronsUpDown } from '@lucide/svelte';
     import { OPEN_STATUSES, STATUS_LABELS, type ProjectStatus } from '../status';
-    import { projectLabel, type ProjectRow as Row } from '../project';
+    import { projectLabel, type ProjectRow as Row, type Sort, type SortKey } from '../project';
 
     type Props = {
         data: Row[];
         tasks?: TaskItem[];
+        sort?: Sort;
+        onsort?: (key: SortKey) => void;
         onstatus?: (row: Row, status: ProjectStatus) => void;
         onnote?: (row: Row, note: string) => void;
         onproject?: (row: Row, value: { name: string; detail: string }) => void;
@@ -25,7 +27,7 @@
         ontaskdelete?: (task: TaskItem) => void;
     };
     const {
-        data, tasks = [], onstatus, onnote, onproject, oncustomer, onwon, onlost, ondelete,
+        data, tasks = [], sort = null, onsort, onstatus, onnote, onproject, oncustomer, onwon, onlost, ondelete,
         ontasktoggle, ontaskadd, ontaskdelete
     }: Props = $props();
 
@@ -35,31 +37,30 @@
     const openTaskCount = (row: Row) =>
         tasks.filter((t) => t.projectId === row.id && !t.doneAt).length;
     const isOpen = (status: ProjectStatus) => (OPEN_STATUSES as readonly string[]).includes(status);
+    const ariaSort = (key: SortKey) =>
+        sort?.key !== key ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending';
 </script>
+
+{#snippet sortButton(key: SortKey, label: string)}
+    <button onclick={() => onsort?.(key)}>
+        {label}
+        {#if sort?.key !== key}
+            <ChevronsUpDown size={16} />
+        {:else if sort.dir === 'asc'}
+            <ChevronUp size={16} />
+        {:else}
+            <ChevronDown size={16} />
+        {/if}
+    </button>
+{/snippet}
 
 <table>
     <thead>
         <tr>
-            <th class="project-name">
-                <button>
-                    Project name <ChevronsUpDown size={16} />
-                </button>
-            </th>
-            <th class="customer">
-                <button>
-                    Customer <ChevronsUpDown size={16} />
-                </button>
-            </th>
-            <th>
-                <button>
-                    Status <ChevronsUpDown size={16} />
-                </button>
-            </th>
-            <th>
-                <button>
-                    Task
-                </button>
-            </th>
+            <th class="project-name" aria-sort={ariaSort('project')}>{@render sortButton('project', 'Project name')}</th>
+            <th class="customer" aria-sort={ariaSort('customer')}>{@render sortButton('customer', 'Customer')}</th>
+            <th aria-sort={ariaSort('status')}>{@render sortButton('status', 'Status')}</th>
+            <th><span class="plain">Task</span></th>
             <th class="note">Note</th>
             <th></th>
         </tr>
@@ -151,6 +152,11 @@
                 font-weight: 500;
                 border: 0;
                 cursor: pointer;
+            }
+            & .plain {
+                display: block;
+                padding: 4px;
+                font-weight: 500;
             }
         }
         & td {

@@ -1,9 +1,8 @@
 import { env } from 'cloudflare:workers';
-import { desc } from 'drizzle-orm';
 import { MINOR_UNIT } from '../../lib/project';
 import { getDb } from '../../lib/server/db';
 import { project } from '../../lib/server/db/schema';
-import { parseFilter } from '../../lib/server/project-query';
+import { parseListQuery } from '../../lib/server/project-query';
 import { STATUS_LABELS } from '../../lib/status';
 import type { RequestHandler } from './$types';
 
@@ -30,9 +29,9 @@ const text = (value: string) => {
 	return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 };
 
-// Downloads the projects the list is showing, so `?q=` and `?status=` apply here too.
+// Downloads the projects the list is showing, so `?q=`, `?status=` and `?sort=` apply here too.
 export const GET: RequestHandler = async ({ url }) => {
-	const { where } = parseFilter(url);
+	const { where, orderBy } = parseListQuery(url);
 
 	const rows = await getDb(env.DB)
 		.select({
@@ -50,7 +49,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		})
 		.from(project)
 		.where(where)
-		.orderBy(desc(project.createdAt));
+		.orderBy(...orderBy);
 
 	const lines = rows.map((p) =>
 		[

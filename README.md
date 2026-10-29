@@ -13,7 +13,8 @@ You deploy it to your own Cloudflare account, so your data stays in your own dat
   - Won and Lost are set from the row menu (`...`), where you enter the date and the amount or the reason.
 - **Tasks per project**: next actions with a due date. Done tasks stay as a history. A cross-project task list is one click away.
 - **Filter**: free-text search over names, notes and details, plus a status filter. The filter lives in the URL, so a filtered view can be bookmarked or shared.
-- **CSV export** of whatever the list is showing.
+- **Sorting** by project, customer or status (click a column header: ascending, descending, then back to newest first). Status sorts in pipeline order. The sort is part of the URL too.
+- **CSV export** of whatever the list is showing, in the same order.
 - **Sign-in with Cloudflare Access**: no passwords or user tables in the app. The header shows who is signed in, with a logout link.
 
 ### What it deliberately does not do

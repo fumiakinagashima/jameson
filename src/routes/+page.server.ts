@@ -1,9 +1,9 @@
 import { fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getDb } from '../lib/server/db';
 import { project, task } from '../lib/server/db/schema';
-import { parseFilter } from '../lib/server/project-query';
+import { parseListQuery } from '../lib/server/project-query';
 import { MINOR_UNIT, projectLabel } from '../lib/project';
 import { OPEN_STATUSES } from '../lib/status';
 import type { Actions, PageServerLoad } from './$types';
@@ -21,7 +21,7 @@ const str = (form: FormData, key: string) => {
 
 export const load: PageServerLoad = async ({ url }) => {
 	const db = database();
-	const { filter, where } = parseFilter(url);
+	const { filter, sort, where, orderBy } = parseListQuery(url);
 
 	const projects = await db
 		.select({
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		})
 		.from(project)
 		.where(where)
-		.orderBy(desc(project.createdAt));
+		.orderBy(...orderBy);
 
 	const tasks = await db
 		.select({
@@ -52,6 +52,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		filter,
+		sort,
 		projects,
 		tasks: tasks.map(({ customer, projectName, doneAt, ...t }) => ({
 			...t,

@@ -10,6 +10,11 @@ export type ProjectRow = {
 	customerDetail: string;
 };
 
+// The list can be sorted by these columns (`?sort=` and `?dir=`). No sort means newest first.
+export const SORT_KEYS = ['project', 'customer', 'status'] as const;
+export type SortKey = (typeof SORT_KEYS)[number];
+export type Sort = { key: SortKey; dir: 'asc' | 'desc' } | null;
+
 // The amount is stored in minor currency units. Until the currency becomes a setting,
 // assume two decimal places.
 export const MINOR_UNIT = 100;
