@@ -14,14 +14,24 @@
     let message = $state<string>('');
 
     // The filter lives in the URL (`?q=&status=`), so it survives reloads and can be shared.
-    const applyFilter = (filter: { text: string; status: string }) => {
+    const filterQuery = (filter: { text: string; status: string }) => {
         const params = new SvelteURLSearchParams();
         if (filter.text) params.set('q', filter.text);
         if (filter.status) params.set('status', filter.status);
         const query = params.toString();
+        return query ? `?${query}` : '';
+    };
+
+    const applyFilter = (filter: { text: string; status: string }) => {
         // resolve() takes a route, not a query string, so it is applied to the path only.
         // eslint-disable-next-line svelte/no-navigation-without-resolve
-        goto(resolve('/') + (query ? `?${query}` : ''), { replace: true, reset: false });
+        goto(resolve('/') + filterQuery(filter), { replace: true, reset: false });
+    };
+
+    // Downloads the projects on screen. The response is an attachment, so the browser
+    // saves it and stays on this page.
+    const downloadCsv = () => {
+        window.location.assign(`/export.csv${filterQuery(data.filter)}`);
     };
 
     // Calls a form action in +page.server.ts, then reloads the data.
@@ -60,7 +70,7 @@
                 <ListTodo size={16} />My Tasks
             </button>
 
-            <button class="outline">
+            <button class="outline" onclick={downloadCsv}>
                 <Download size={16} />CSV Download
             </button>
 

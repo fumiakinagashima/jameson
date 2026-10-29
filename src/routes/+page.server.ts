@@ -1,15 +1,13 @@
 import { fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
-import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { getDb } from '../lib/server/db';
 import { project, task } from '../lib/server/db/schema';
-import { projectLabel } from '../lib/project';
-import { OPEN_STATUSES, PROJECT_STATUSES } from '../lib/status';
+import { parseFilter } from '../lib/server/project-query';
+import { MINOR_UNIT, projectLabel } from '../lib/project';
+import { OPEN_STATUSES } from '../lib/status';
 import type { Actions, PageServerLoad } from './$types';
 
-// The amount is stored in minor currency units. Until the currency becomes a setting,
-// assume two decimal places.
-const MINOR_UNIT = 100;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const database = () => getDb(env.DB);
@@ -23,18 +21,7 @@ const str = (form: FormData, key: string) => {
 
 export const load: PageServerLoad = async ({ url }) => {
 	const db = database();
-
-	// Open projects by default. `?status=` shows one status, including won and lost,
-	// and `?status=all` shows every project.
-	const requested = url.searchParams.get('status');
-	const all = requested === 'all';
-	const status = PROJECT_STATUSES.find((s) => s === requested);
-
-	// `?q=` keeps the projects that contain every whitespace-separated term, ignoring case,
-	// in any of the text columns. instr() avoids LIKE escaping and D1's LIKE pattern length limit.
-	const text = (url.searchParams.get('q') ?? '').trim().slice(0, 100);
-	const terms = text.split(/\s+/).filter(Boolean);
-	const searchable = [project.name, project.customer, project.note, project.projectDetail, project.customerDetail];
+	const { filter, where } = parseFilter(url);
 
 	const projects = await db
 		.select({
@@ -47,14 +34,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			customerDetail: project.customerDetail
 		})
 		.from(project)
-		.where(
-			and(
-				all ? undefined : status ? eq(project.status, status) : inArray(project.status, OPEN_STATUSES),
-				...terms.map((term) =>
-					or(...searchable.map((column) => sql`instr(lower(${column}), ${term.toLowerCase()}) > 0`))
-				)
-			)
-		)
+		.where(where)
 		.orderBy(desc(project.createdAt));
 
 	const tasks = await db
@@ -71,7 +51,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		.innerJoin(project, eq(task.projectId, project.id));
 
 	return {
-		filter: { text, status: all ? 'all' : (status ?? '') },
+		filter,
 		projects,
 		tasks: tasks.map(({ customer, projectName, doneAt, ...t }) => ({
 			...t,
