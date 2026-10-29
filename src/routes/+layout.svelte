@@ -1,7 +1,7 @@
 <script lang="ts">
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
-    import { User, Settings, LogOut } from '@lucide/svelte';
+    import { User, LogOut } from '@lucide/svelte';
 	import './app.scss';
 
 	let { children, data }: LayoutProps = $props();
@@ -14,7 +14,6 @@
 <header>
     <p>JAMESON</p>
     <div class="menu">
-        <button><Settings color="#fbfbfb" size={20} /></button>
         {#if data.user}
             <span class="user"><User size={16} />{data.user.email}</span>
             <!-- A full page load, so the request reaches Access instead of the SvelteKit router. -->
