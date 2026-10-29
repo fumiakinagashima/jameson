@@ -10,7 +10,9 @@ declare global {
 		}
 
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			user: import('./lib/server/access').AccessUser | null;
+		}
 		// interface PageData {}
 		// interface PageState {}
 	}

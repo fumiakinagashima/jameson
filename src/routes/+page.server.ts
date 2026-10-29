@@ -14,6 +14,8 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const database = () => getDb(env.DB);
 
+const actor = (locals: App.Locals) => locals.user?.sub ?? null;
+
 const str = (form: FormData, key: string) => {
 	const value = form.get(key);
 	return typeof value === 'string' ? value : '';
@@ -80,48 +82,60 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-	createProject: async () => {
-		await database().insert(project).values({ name: 'New Project', customer: 'Customer' });
+	createProject: async ({ locals }) => {
+		const by = actor(locals);
+		await database()
+			.insert(project)
+			.values({
+				name: 'New Project',
+				customer: 'Cutomer',
+				createdBy: by,
+				updatedBy: by
+			});
 	},
 
-	updateProject: async ({ request }) => {
+	updateProject: async ({ request, locals }) => {
 		const form = await request.formData();
 		await database()
 			.update(project)
-			.set({ name: str(form, 'name').trim(), projectDetail: str(form, 'detail') })
+			.set({
+				name: str(form, 'name').trim(),
+				projectDetail: str(form, 'detail'),
+				updatedBy: actor(locals)
+			})
 			.where(eq(project.id, str(form, 'id')));
 	},
 
-	updateCustomer: async ({ request }) => {
+	updateCustomer: async ({ request, locals }) => {
 		const form = await request.formData();
 		const customer = str(form, 'customer').trim();
 		if (!customer) return fail(400, { message: 'Customer name is required.' });
 		await database()
 			.update(project)
-			.set({ customer, customerDetail: str(form, 'detail') })
+			.set({ customer, customerDetail: str(form, 'detail'), updatedBy: actor(locals) })
 			.where(eq(project.id, str(form, 'id')));
 	},
 
-	updateStatus: async ({ request }) => {
+	updateStatus: async ({ request, locals }) => {
 		const form = await request.formData();
 		const status = OPEN_STATUSES.find((s) => s === str(form, 'status'));
 		// Won and Lost are set through their own actions.
 		if (!status) return fail(400, { message: 'Invalid status.' });
 		await database()
 			.update(project)
-			.set({ status })
+			.set({ status, updatedBy: actor(locals) })
 			.where(eq(project.id, str(form, 'id')));
 	},
 
-	updateNote: async ({ request }) => {
+	updateNote: async ({ request, locals }) => {
 		const form = await request.formData();
 		await database()
 			.update(project)
-			.set({ note: str(form, 'note') })
+			.set({ note: str(form, 'note'), updatedBy: actor(locals) })
 			.where(eq(project.id, str(form, 'id')));
 	},
 
-	winProject: async ({ request }) => {
+	winProject: async ({ request, locals }) => {
 		const form = await request.formData();
 		const closedOn = str(form, 'closedOn');
 		const amount = Number(str(form, 'amount'));
@@ -133,12 +147,13 @@ export const actions: Actions = {
 				status: 'won',
 				closedOn,
 				amount: Math.round(amount * MINOR_UNIT),
-				closeNote: str(form, 'note')
+				closeNote: str(form, 'note'),
+				updatedBy: actor(locals),
 			})
 			.where(eq(project.id, str(form, 'id')));
 	},
 
-	loseProject: async ({ request }) => {
+	loseProject: async ({ request, locals }) => {
 		const form = await request.formData();
 		const closedOn = str(form, 'closedOn');
 		if (!DATE.test(closedOn)) return fail(400, { message: 'Invalid date.' });
@@ -148,7 +163,8 @@ export const actions: Actions = {
 				status: 'lost',
 				closedOn,
 				amount: 0,
-				closeNote: str(form, 'reason')
+				closeNote: str(form, 'reason'),
+				updatedBy: actor(locals),
 			})
 			.where(eq(project.id, str(form, 'id')));
 	},
@@ -160,7 +176,7 @@ export const actions: Actions = {
 		await db.batch([db.delete(task).where(eq(task.projectId, id)), db.delete(project).where(eq(project.id, id))]);
 	},
 
-	addTask: async ({ request }) => {
+	addTask: async ({ request, locals }) => {
 		const form = await request.formData();
 		const title = str(form, 'title').trim();
 		const dueDate = str(form, 'dueDate');
@@ -170,10 +186,11 @@ export const actions: Actions = {
 		const projectId = str(form, 'projectId');
 		const exists = await db.select({ id: project.id }).from(project).where(eq(project.id, projectId)).get();
 		if (!exists) return fail(404, { message: 'Project not found.' });
-		await db.insert(task).values({ projectId, title, dueDate });
+		const by = actor(locals);
+		await db.insert(task).values({ projectId, title, dueDate, createdBy: by, updatedBy: by });
 	},
 
-	toggleTask: async ({ request }) => {
+	toggleTask: async ({ request, locals }) => {
 		const form = await request.formData();
 		const id = str(form, 'id');
 		const db = database();
@@ -181,7 +198,7 @@ export const actions: Actions = {
 		if (!current) return fail(404, { message: 'Task not found.' });
 		await db
 			.update(task)
-			.set({ doneAt: current.doneAt ? null : new Date() })
+			.set({ doneAt: current.doneAt ? null : new Date(), updatedBy: actor(locals) })
 			.where(eq(task.id, id));
 	},
 
