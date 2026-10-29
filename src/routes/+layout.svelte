@@ -9,6 +9,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+    <title>JAMESON | Micro SFA</title>
 </svelte:head>
 
 <header>
@@ -44,20 +45,7 @@
         & div.menu {
             display: flex;
             align-items: center;
-            gap: 16px;
-        }
-        & button {
-            background: transparent;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0px;
-            border: 0;
-            width: 32px;
-            height: 32px;
-            font-weight: 500;
-            cursor: pointer;
+            gap: 24px;
         }
         & .user, & a.logout {
             display: flex;
