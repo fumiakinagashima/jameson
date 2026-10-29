@@ -3,17 +3,17 @@
 
     type Props = {
         closeDialog: () => void;
-        onsubmit?: (result: { closedAt: string; amount: number; note: string }) => void;
+        onsubmit?: (result: { closedOn: string; amount: number; note: string }) => void;
     };
     const { closeDialog, onsubmit }: Props = $props();
 
     // Local date as 'YYYY-MM-DD'.
-    let closedAt = $state<string>(new Date().toLocaleDateString('sv-SE'));
+    let closedOn = $state<string>(new Date().toLocaleDateString('sv-SE'));
     let amount = $state<number>(0);
     let note = $state<string>('');
 
     const submit = () => {
-        onsubmit?.({ closedAt, amount, note });
+        onsubmit?.({ closedOn, amount, note });
         closeDialog();
     };
 </script>
@@ -25,7 +25,7 @@
     <main>
         <div>
             <label for="won-date">Won date</label>
-            <input id="won-date" type="date" bind:value={closedAt} />
+            <input id="won-date" type="date" bind:value={closedOn} />
         </div>
         <div>
             <label for="won-amount">Amount</label>

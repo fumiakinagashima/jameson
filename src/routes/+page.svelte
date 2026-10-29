@@ -80,8 +80,8 @@
             onnote={(row, note) => act('updateNote', { id: row.id, note })}
             onproject={(row, v) => act('updateProject', { id: row.id, name: v.name, detail: v.detail })}
             oncustomer={(row, v) => act('updateCustomer', { id: row.id, customer: v.customer, detail: v.detail })}
-            onwon={(row, v) => act('winProject', { id: row.id, closedAt: v.closedAt, amount: String(v.amount), note: v.note })}
-            onlost={(row, v) => act('loseProject', { id: row.id, closedAt: v.closedAt, reason: v.reason })}
+            onwon={(row, v) => act('winProject', { id: row.id, closedOn: v.closedOn, amount: String(v.amount), note: v.note })}
+            onlost={(row, v) => act('loseProject', { id: row.id, closedOn: v.closedOn, reason: v.reason })}
             ondelete={(row) => act('deleteProject', { id: row.id })}
             ontasktoggle={(task) => act('toggleTask', { id: task.id })}
             ontaskadd={(projectId, input) => act('addTask', { projectId, ...input })}

@@ -17,8 +17,8 @@
         onnote?: (row: Row, note: string) => void;
         onproject?: (row: Row, value: { name: string; detail: string }) => void;
         oncustomer?: (row: Row, value: { customer: string; detail: string }) => void;
-        onwon?: (row: Row, value: { closedAt: string; amount: number; note: string }) => void;
-        onlost?: (row: Row, value: { closedAt: string; reason: string }) => void;
+        onwon?: (row: Row, value: { closedOn: string; amount: number; note: string }) => void;
+        onlost?: (row: Row, value: { closedOn: string; reason: string }) => void;
         ondelete?: (row: Row) => void;
         ontasktoggle?: (task: TaskItem) => void;
         ontaskadd?: (projectId: string, input: { title: string; dueDate: string }) => void;

@@ -8,6 +8,13 @@
       "when": 1793178019607,
       "tag": "0000_freezing_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793232573789,
+      "tag": "0001_closed_on",
+      "breakpoints": true
     }
   ]
 }

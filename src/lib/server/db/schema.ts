@@ -26,8 +26,9 @@ export const project = sqliteTable('project', {
 	// Contact person on the customer side.
 	contact: text('contact').notNull().default(''),
 	note: text('note').notNull().default(''),
-	// Set when the project is marked won or lost. Null while open.
-	closedAt: integer('closed_at', { mode: 'timestamp_ms' }),
+	// 'YYYY-MM-DD', the date the project was marked won or lost. Null while open.
+	// A calendar date picked by the user, so it carries no time zone (unlike the *_at instants).
+	closedOn: text('closed_on'),
 	// Note on the win, or the reason for the loss.
 	closeNote: text('close_note').notNull().default(''),
 	createdAt: createdAt(),

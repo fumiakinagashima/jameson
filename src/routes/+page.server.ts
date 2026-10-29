@@ -123,15 +123,15 @@ export const actions: Actions = {
 
 	winProject: async ({ request }) => {
 		const form = await request.formData();
-		const closedAt = str(form, 'closedAt');
+		const closedOn = str(form, 'closedOn');
 		const amount = Number(str(form, 'amount'));
-		if (!DATE.test(closedAt)) return fail(400, { message: 'Invalid date.' });
+		if (!DATE.test(closedOn)) return fail(400, { message: 'Invalid date.' });
 		if (!Number.isFinite(amount) || amount < 0) return fail(400, { message: 'Invalid amount.' });
 		await database()
 			.update(project)
 			.set({
 				status: 'won',
-				closedAt: new Date(`${closedAt}T00:00:00Z`),
+				closedOn,
 				amount: Math.round(amount * MINOR_UNIT),
 				closeNote: str(form, 'note')
 			})
@@ -140,13 +140,13 @@ export const actions: Actions = {
 
 	loseProject: async ({ request }) => {
 		const form = await request.formData();
-		const closedAt = str(form, 'closedAt');
-		if (!DATE.test(closedAt)) return fail(400, { message: 'Invalid date.' });
+		const closedOn = str(form, 'closedOn');
+		if (!DATE.test(closedOn)) return fail(400, { message: 'Invalid date.' });
 		await database()
 			.update(project)
 			.set({
 				status: 'lost',
-				closedAt: new Date(`${closedAt}T00:00:00Z`),
+				closedOn,
 				amount: 0,
 				closeNote: str(form, 'reason')
 			})
