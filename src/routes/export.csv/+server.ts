@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { MINOR_UNIT } from '../../lib/project';
+import { cell, toCsv } from '../../lib/server/csv';
 import { getDb } from '../../lib/server/db';
 import { project } from '../../lib/server/db/schema';
 import { parseListQuery } from '../../lib/server/project-query';
@@ -21,15 +22,6 @@ const HEADER = [
 	'Created at (UTC)',
 	'Updated at (UTC)'
 ];
-
-// Spreadsheets run a cell that starts with one of these as a formula. Prefixing a quote
-// keeps typed text from being executed when the file is opened.
-const FORMULA = /^[=+\-@\t\r]/;
-
-const text = (value: string) => {
-	const safe = FORMULA.test(value) ? `'${value}` : value;
-	return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-};
 
 // Downloads the projects the list is showing, so `?q=`, `?status=` and `?sort=` apply here too.
 export const GET: RequestHandler = async ({ url }) => {
@@ -53,27 +45,22 @@ export const GET: RequestHandler = async ({ url }) => {
 		.where(where)
 		.orderBy(...orderBy);
 
-	const lines = rows.map((p) =>
-		[
-			text(p.name),
-			text(p.customer),
-			statusLabel(p.status, 'en'),
-			// The amount is only set once a project is won.
-			p.status === 'won' ? (p.amount / MINOR_UNIT).toFixed(Math.log10(MINOR_UNIT)) : '',
-			p.closedOn ?? '',
-			text(p.note),
-			text(p.projectDetail),
-			text(p.customerDetail),
-			text(p.closeNote),
-			p.createdAt.toISOString(),
-			p.updatedAt.toISOString()
-		].join(',')
-	);
+	const lines = rows.map((p) => [
+		cell(p.name),
+		cell(p.customer),
+		statusLabel(p.status, 'en'),
+		// The amount is only set once a project is won.
+		p.status === 'won' ? (p.amount / MINOR_UNIT).toFixed(Math.log10(MINOR_UNIT)) : '',
+		p.closedOn ?? '',
+		cell(p.note),
+		cell(p.projectDetail),
+		cell(p.customerDetail),
+		cell(p.closeNote),
+		p.createdAt.toISOString(),
+		p.updatedAt.toISOString()
+	]);
 
-	// The BOM makes Excel read the file as UTF-8.
-	const body = '﻿' + [HEADER.join(','), ...lines].join('\r\n') + '\r\n';
-
-	return new Response(body, {
+	return new Response(toCsv(HEADER, lines), {
 		headers: {
 			'content-type': 'text/csv; charset=utf-8',
 			'content-disposition': `attachment; filename="jameson-projects-${new Date().toISOString().slice(0, 10)}.csv"`,

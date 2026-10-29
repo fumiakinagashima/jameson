@@ -1,0 +1,183 @@
+import { readFile } from 'node:fs/promises';
+import { expect, test, type Page } from '@playwright/test';
+
+// Names are unique per test, so a test finds its own rows among those the others left behind.
+let counter = 0;
+const unique = (label: string) => `${label}-${Date.now()}-${counter++}`;
+
+// Opens the page and waits until it has loaded its scripts. A click before the page is
+// interactive does nothing, which would look like a bug in the app.
+const open = async (page: Page) => {
+	await page.goto('/');
+	await page.waitForLoadState('networkidle');
+};
+
+const rowOf = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text });
+
+const filterBy = async (page: Page, text: string) => {
+	await page.getByLabel('Filter text').fill(text);
+	await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(text)}`));
+};
+
+// Creates a project from the Create button, then names it and its customer in the dialogs.
+const createProject = async (page: Page, name: string, customer = name) => {
+	await open(page);
+	await page.getByRole('button', { name: 'Create' }).click();
+
+	const created = rowOf(page, 'New Project');
+	await expect(created).toHaveCount(1);
+	await created.getByRole('button', { name: 'New Project' }).click();
+	await page.getByPlaceholder('Input project name').fill(name);
+	await page.getByRole('button', { name: 'OK' }).click();
+
+	const renamed = rowOf(page, name);
+	await expect(renamed).toHaveCount(1);
+	await renamed.getByRole('button', { name: 'Cutomer' }).click();
+	await page.getByPlaceholder('Input customer name').fill(customer);
+	await page.getByRole('button', { name: 'OK' }).click();
+	await expect(renamed.getByRole('button', { name: customer, exact: true })).toBeVisible();
+};
+
+// Let the page finish what it is loading before the browser closes, so a request is not cut off.
+test.afterEach(async ({ page }) => {
+	await page.waitForLoadState('networkidle');
+});
+
+test('the page is in English and lists projects', async ({ page }) => {
+	await open(page);
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await expect(page).toHaveTitle('JAMESON | Micro SFA');
+	await expect(page.getByRole('button', { name: 'CSV Download' })).toBeVisible();
+});
+
+test('a project keeps its note and status after a reload', async ({ page }) => {
+	const name = unique('note');
+	await createProject(page, name);
+
+	const row = rowOf(page, name);
+	const saved = (action: string) => page.waitForResponse((r) => r.url().includes(`/${action}`));
+
+	// Each change is saved when the field loses focus or changes; wait for the server's answer,
+	// or the reload below could cut the request off.
+	await row.getByRole('textbox').fill('Waiting for a quote');
+	await Promise.all([saved('updateNote'), row.getByRole('textbox').blur()]);
+	await page.waitForLoadState('networkidle');
+	await Promise.all([saved('updateStatus'), row.getByRole('combobox').selectOption('proposal')]);
+	await page.waitForLoadState('networkidle');
+
+	await page.reload();
+	await page.waitForLoadState('networkidle');
+	await expect(row.getByRole('textbox')).toHaveValue('Waiting for a quote');
+	await expect(row.getByRole('combobox')).toHaveValue('proposal');
+});
+
+test('tasks can be added and checked off', async ({ page }) => {
+	const name = unique('task');
+	await createProject(page, name);
+
+	const row = rowOf(page, name);
+	const openTasks = row.getByRole('button', { name: /^\d+$/ });
+	await expect(openTasks).toHaveText('0');
+
+	await openTasks.click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByPlaceholder('Add a task').fill('Call them back');
+	await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+	await expect(dialog.getByText('Call them back')).toBeVisible();
+
+	await dialog.getByRole('checkbox').check();
+	await dialog.getByRole('button', { name: 'Close' }).click();
+	// A task that is done is no longer counted.
+	await expect(openTasks).toHaveText('0');
+});
+
+test('the list can be filtered by text and cleared', async ({ page }) => {
+	const first = unique('filter-a');
+	const second = unique('filter-b');
+	await createProject(page, first);
+	await createProject(page, second);
+
+	await filterBy(page, first);
+	await expect(rowOf(page, first)).toHaveCount(1);
+	await expect(rowOf(page, second)).toHaveCount(0);
+
+	await page.getByRole('button', { name: 'Clear search condition' }).click();
+	await expect(page.getByLabel('Filter text')).toHaveValue('');
+	await expect(rowOf(page, second)).toHaveCount(1);
+});
+
+test('clicking a column header cycles ascending, descending and the default order', async ({ page }) => {
+	const prefix = unique('sort');
+	// Created in this order, so the default order (newest first) is Gamma, alpha, Beta.
+	await createProject(page, `${prefix}-1`, `${prefix}-Beta`);
+	await createProject(page, `${prefix}-2`, `${prefix}-alpha`);
+	await createProject(page, `${prefix}-3`, `${prefix}-Gamma`);
+	await filterBy(page, prefix);
+
+	const customers = () => page.getByRole('row').getByRole('button', { name: /-(Beta|alpha|Gamma)$/ }).allTextContents();
+	const header = page.getByRole('columnheader', { name: 'Customer' });
+	const strip = (names: string[]) => names.map((n) => n.replace(`${prefix}-`, ''));
+
+	await expect.poll(async () => strip(await customers())).toEqual(['Gamma', 'alpha', 'Beta']);
+
+	await header.getByRole('button').click();
+	await expect(header).toHaveAttribute('aria-sort', 'ascending');
+	await expect.poll(async () => strip(await customers())).toEqual(['alpha', 'Beta', 'Gamma']);
+
+	await header.getByRole('button').click();
+	await expect(header).toHaveAttribute('aria-sort', 'descending');
+	await expect.poll(async () => strip(await customers())).toEqual(['Gamma', 'Beta', 'alpha']);
+
+	await header.getByRole('button').click();
+	await expect(header).toHaveAttribute('aria-sort', 'none');
+	await expect.poll(async () => strip(await customers())).toEqual(['Gamma', 'alpha', 'Beta']);
+});
+
+test('a won project leaves the open list and shows up under Won', async ({ page }) => {
+	const name = unique('won');
+	await createProject(page, name);
+
+	await rowOf(page, name).getByRole('button', { name: 'Commands' }).click();
+	await page.getByRole('menuitem', { name: 'Won' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Amount').fill('1200');
+	await dialog.getByRole('button', { name: 'OK' }).click();
+
+	// The list shows open projects by default.
+	await expect(rowOf(page, name)).toHaveCount(0);
+
+	await page.locator('#status').selectOption('won');
+	await expect(rowOf(page, name)).toHaveCount(1);
+	await expect(rowOf(page, name).getByText('Won', { exact: true })).toBeVisible();
+});
+
+test('a project can be deleted after a confirmation', async ({ page }) => {
+	const name = unique('delete');
+	await createProject(page, name);
+
+	await rowOf(page, name).getByRole('button', { name: 'Commands' }).click();
+	await page.getByRole('menuitem', { name: 'Delete' }).click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.getByText(name)).toBeVisible();
+	await dialog.getByRole('button', { name: 'Delete' }).click();
+
+	await expect(rowOf(page, name)).toHaveCount(0);
+});
+
+test('the CSV download holds what the list shows', async ({ page }) => {
+	const name = unique('csv');
+	await createProject(page, name);
+	await filterBy(page, name);
+
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('button', { name: 'CSV Download' }).click()
+	]);
+	expect(download.suggestedFilename()).toMatch(/^jameson-projects-\d{4}-\d{2}-\d{2}\.csv$/);
+
+	const csv = await readFile((await download.path())!, 'utf8');
+	const [header, ...rows] = csv.replace(/^\uFEFF/, '').trim().split('\r\n');
+	expect(header.split(',')[0]).toBe('Project');
+	expect(rows).toHaveLength(1);
+	expect(rows[0]).toContain(name);
+});

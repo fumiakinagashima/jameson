@@ -15,6 +15,7 @@
 		"src",
 		"vite.config.ts",
 		"playwright.config.ts",
+		"e2e",
 		"drizzle.config.ts"
 	]
 }

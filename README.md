@@ -130,12 +130,18 @@ bun run lint       # ESLint
 bun run build      # production build
 bun run preview    # run the build in the Workers runtime (requests need an Access token, so you will see 403)
 bun run deploy     # build, apply migrations to the remote database, then deploy
+bun run test       # unit tests, then end-to-end tests
 ```
 
 - `build`, `check` and `gen` delete `.svelte-kit/cloudflare` first. Run `bun run build` again before `preview`.
 - After adding or changing a binding in `wrangler.jsonc`, run `bun run gen` to regenerate `worker-configuration.d.ts`. Changing the values under `vars` needs no regeneration.
 - Local secrets go in `.dev.vars` (git-ignored). Production secrets are set with `wrangler secret put`.
 - The database schema is in `src/lib/server/db/schema.ts`. After changing it, create a migration with `bun run db:generate` (it needs `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID` and `CLOUDFLARE_D1_TOKEN` set; see `.env.example`), then apply it with `wrangler d1 migrations apply`.
+
+### Tests
+
+- `bun run test:unit` runs the unit tests (Vitest): the Access token check, the form validation, the CSV output and the URL parsing.
+- `bun run test:e2e` runs the end-to-end tests (Playwright, Chromium) against a dev server with its own empty local database in `.wrangler/e2e`, so your development data is not touched. The first run downloads Chromium.
 
 ### Adding a language
 
@@ -160,7 +166,7 @@ This is an alpha. Known gaps:
 - A Won or Lost project cannot be reopened yet.
 - No highlighting or reminders for tasks that are due soon.
 - No file attachments.
-- No automated tests beyond type checking and linting.
+- The tests cover the main logic and the main screens, not every case. The SQL behind filtering and sorting is only tested through the screens.
 - The app has not had a security review. It relies on Cloudflare Access in front of it and verifies the Access token on every request, but run it with real customer data at your own risk.
 
 ## Feedback

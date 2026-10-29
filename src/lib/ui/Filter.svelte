@@ -13,18 +13,49 @@
 
     const { text: current, status: currentStatus, onchange, onclear }: Props = $props();
 
-    // Follow the loaded filter (e.g. after Clear), but stay editable while typing.
-    let text = $derived(current);
-    let status = $derived(currentStatus);
+    // What the inputs show. They start from the loaded filter and follow it when it changes from
+    // outside (the back button, a link). A reload of the same data must not overwrite what is
+    // being typed, and neither must the page catching up with what was just typed.
+    // svelte-ignore state_referenced_locally
+    let text = $state<string>(current);
+    // svelte-ignore state_referenced_locally
+    let status = $state<string>(currentStatus);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const apply = () => {
+    // svelte-ignore state_referenced_locally
+    let seenText = current;
+    // svelte-ignore state_referenced_locally
+    let seenStatus = currentStatus;
+
+    $effect(() => {
+        if (current !== seenText) {
+            seenText = current;
+            // While a change is waiting to be applied, the person is typing and their text wins.
+            if (!timer) text = current;
+        }
+        if (currentStatus !== seenStatus) {
+            seenStatus = currentStatus;
+            status = currentStatus;
+        }
+    });
+
+    const stopTimer = () => {
         clearTimeout(timer);
+        timer = undefined;
+    };
+    const apply = () => {
+        stopTimer();
         onchange({ text: text.trim(), status });
     };
     const typing = () => {
-        clearTimeout(timer);
+        stopTimer();
         timer = setTimeout(apply, 300);
+    };
+    const clear = () => {
+        stopTimer();
+        text = '';
+        status = '';
+        onclear();
     };
 </script>
 
@@ -46,7 +77,7 @@
         </select>
     </div>
     <div class="button-wrap">
-        <button title={m.clear_filter()} onclick={onclear}>
+        <button title={m.clear_filter()} onclick={clear}>
             <X size={20} />
         </button>
     </div>

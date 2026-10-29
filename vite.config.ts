@@ -1,5 +1,4 @@
 import { defineConfig } from 'vitest/config';
-import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
@@ -12,7 +11,9 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			// The end-to-end tests set E2E and get a database of their own, so they never touch the
+			// one used for development. `wrangler d1 ... --persist-to .wrangler/e2e` writes to the same place.
+			adapter: adapter(process.env.E2E ? { platformProxy: { persist: { path: '.wrangler/e2e/v3' } } } : undefined)
 		}),
 		paraglideVitePlugin({
 			project: './project.inlang',
@@ -26,20 +27,6 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'client',
-					browser: {
-						enabled: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium', headless: true }]
-					},
-					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
-				}
-			},
-
 			{
 				extends: './vite.config.ts',
 				test: {
