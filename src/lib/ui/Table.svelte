@@ -22,13 +22,14 @@
         oncustomer?: (row: Row, value: { customer: string; detail: string }) => void;
         onwon?: (row: Row, value: { closedOn: string; amount: number; note: string }) => void;
         onlost?: (row: Row, value: { closedOn: string; reason: string }) => void;
+        onreopen?: (row: Row) => void;
         ondelete?: (row: Row) => void;
         ontasktoggle?: (task: TaskItem) => void;
         ontaskadd?: (projectId: string, input: { title: string; dueDate: string }) => void;
         ontaskdelete?: (task: TaskItem) => void;
     };
     const {
-        data, tasks = [], sort = null, onsort, onstatus, onnote, onproject, oncustomer, onwon, onlost, ondelete,
+        data, tasks = [], sort = null, onsort, onstatus, onnote, onproject, oncustomer, onwon, onlost, onreopen, ondelete,
         ontasktoggle, ontaskadd, ontaskdelete
     }: Props = $props();
 
@@ -92,6 +93,8 @@
                 </td>
                 <td>
                     <RowMenu
+                        closed={!isOpen(d.status)}
+                        onreopen={() => onreopen?.(d)}
                         onwon={() => dialog = { kind: 'won', row: d }}
                         onlost={() => dialog = { kind: 'lost', row: d }}
                         ondelete={() => dialog = { kind: 'delete', row: d }}

@@ -1,13 +1,16 @@
 <script lang="ts">
-    import { Ellipsis, Trophy, CircleX, Trash2 } from '@lucide/svelte';
+    import { Ellipsis, Trophy, CircleX, RotateCcw, Trash2 } from '@lucide/svelte';
     import { m } from '../paraglide/messages.js';
 
     type Props = {
+        // A won or lost project can be reopened but not closed again.
+        closed?: boolean;
         onwon?: () => void;
         onlost?: () => void;
+        onreopen?: () => void;
         ondelete?: () => void;
     };
-    const { onwon, onlost, ondelete }: Props = $props();
+    const { closed = false, onwon, onlost, onreopen, ondelete }: Props = $props();
 
     let open = $state<boolean>(false);
     let root: HTMLElement | undefined = $state();
@@ -30,16 +33,24 @@
     </button>
     {#if open}
         <ul class="menu" role="menu">
-            <li role="none">
-                <button role="menuitem" onclick={() => run(onwon)}>
-                    <Trophy size={16} />{m.mark_won()}
-                </button>
-            </li>
-            <li role="none">
-                <button role="menuitem" onclick={() => run(onlost)}>
-                    <CircleX size={16} />{m.mark_lost()}
-                </button>
-            </li>
+            {#if closed}
+                <li role="none">
+                    <button role="menuitem" onclick={() => run(onreopen)}>
+                        <RotateCcw size={16} />{m.reopen()}
+                    </button>
+                </li>
+            {:else}
+                <li role="none">
+                    <button role="menuitem" onclick={() => run(onwon)}>
+                        <Trophy size={16} />{m.mark_won()}
+                    </button>
+                </li>
+                <li role="none">
+                    <button role="menuitem" onclick={() => run(onlost)}>
+                        <CircleX size={16} />{m.mark_lost()}
+                    </button>
+                </li>
+            {/if}
             <li role="none" class="separator"></li>
             <li role="none">
                 <button role="menuitem" class="danger" onclick={() => run(ondelete)}>

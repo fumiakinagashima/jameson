@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../lib/server/db';
 import { project, task } from '../lib/server/db/schema';
 import { readForm } from '../lib/server/form';
@@ -140,6 +140,24 @@ export const actions: Actions = {
 				updatedBy: actor(locals)
 			})
 			.where(eq(project.id, id));
+	},
+
+	// Puts a won or lost project back in the open list, in Negotiation. What the close recorded
+	// (date, amount, note) is cleared, because those fields hold values only for a closed project.
+	reopenProject: async ({ request, locals }) => {
+		const input = readForm(forms.byId, await request.formData());
+		if (!input.ok) return input.failure;
+		const { id } = input.data;
+		await database()
+			.update(project)
+			.set({
+				status: 'negotiation',
+				closedOn: null,
+				amount: 0,
+				closeNote: '',
+				updatedBy: actor(locals)
+			})
+			.where(and(eq(project.id, id), inArray(project.status, ['won', 'lost'])));
 	},
 
 	deleteProject: async ({ request }) => {

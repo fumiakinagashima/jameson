@@ -111,6 +111,7 @@
             oncustomer={(row, v) => act('updateCustomer', { id: row.id, customer: v.customer, detail: v.detail })}
             onwon={(row, v) => act('winProject', { id: row.id, closedOn: v.closedOn, amount: String(v.amount), note: v.note })}
             onlost={(row, v) => act('loseProject', { id: row.id, closedOn: v.closedOn, reason: v.reason })}
+            onreopen={(row) => act('reopenProject', { id: row.id })}
             ondelete={(row) => act('deleteProject', { id: row.id })}
             ontasktoggle={(task) => act('toggleTask', { id: task.id })}
             ontaskadd={(projectId, input) => act('addTask', { projectId, ...input })}

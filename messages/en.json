@@ -42,6 +42,7 @@
 	"menu_commands": "Commands",
 	"mark_won": "Won",
 	"mark_lost": "Lost",
+	"reopen": "Reopen",
 	"won_date": "Won date",
 	"lost_date": "Lost date",
 

@@ -151,6 +151,29 @@ test('a won project leaves the open list and shows up under Won', async ({ page 
 	await expect(rowOf(page, name).getByText('Won', { exact: true })).toBeVisible();
 });
 
+test('a lost project can be reopened and returns to the open list', async ({ page }) => {
+	const name = unique('reopen');
+	await createProject(page, name);
+
+	await rowOf(page, name).getByRole('button', { name: 'Commands' }).click();
+	await page.getByRole('menuitem', { name: 'Lost' }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click();
+	await expect(rowOf(page, name)).toHaveCount(0);
+
+	await page.locator('#status').selectOption('lost');
+	const row = rowOf(page, name);
+	await expect(row).toHaveCount(1);
+	await row.getByRole('button', { name: 'Commands' }).click();
+	// A closed project cannot be closed again, only reopened.
+	await expect(page.getByRole('menuitem', { name: 'Won' })).toHaveCount(0);
+	await page.getByRole('menuitem', { name: 'Reopen' }).click();
+	await expect(row).toHaveCount(0);
+
+	await page.locator('#status').selectOption('');
+	await expect(rowOf(page, name)).toHaveCount(1);
+	await expect(rowOf(page, name).locator('select')).toHaveValue('negotiation');
+});
+
 test('a project can be deleted after a confirmation', async ({ page }) => {
 	const name = unique('delete');
 	await createProject(page, name);
