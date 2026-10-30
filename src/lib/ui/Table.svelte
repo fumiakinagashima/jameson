@@ -81,10 +81,10 @@
         <tr>
             <th class="project-name" aria-sort={ariaSort('project')}>{@render sortButton('project', m.project_name())}</th>
             <th class="customer" aria-sort={ariaSort('customer')}>{@render sortButton('customer', m.customer())}</th>
-            <th aria-sort={ariaSort('status')}>{@render sortButton('status', m.status())}</th>
-            <th><span class="plain">{m.task()}</span></th>
-            <th class="note">{m.note()}</th>
-            <th></th>
+            <th class="fit" aria-sort={ariaSort('status')}>{@render sortButton('status', m.status())}</th>
+            <th class="task"><span class="plain">{m.task()}</span></th>
+            <th class="fit">{m.note()}</th>
+            <th class="fit"></th>
         </tr>
     </thead>
     <tbody>
@@ -93,7 +93,7 @@
             <tr class={due} data-due={due}>
                 <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{@render shown(d.name)}</button></td>
                 <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{@render shown(d.customer)}</button></td>
-                <td>
+                <td class="fit">
                     {#if isOpen(d.status)}
                         <select value={d.status}
                             onchange={(e) => onstatus?.(d, e.currentTarget.value as ProjectStatus)}>
@@ -105,7 +105,7 @@
                         <span class="closed">{statusLabel(d.status)}</span>
                     {/if}
                 </td>
-                <td class="number">
+                <td class="number task">
                     <div class="tasks">
                         {#if due}
                             <span class="due {due}" title={due === 'overdue' ? m.task_overdue() : m.task_due_soon()}>
@@ -115,11 +115,11 @@
                         <button class="text-link" onclick={() => dialog = { kind: 'task', row: d }}>{openTaskCount(d)}</button>
                     </div>
                 </td>
-                <td>
+                <td class="fit">
                     <input type="text" class="note" value={d.note}
                         onchange={(e) => onnote?.(d, e.currentTarget.value)} />
                 </td>
-                <td>
+                <td class="fit">
                     <RowMenu
                         closed={!isOpen(d.status)}
                         onreopen={() => onreopen?.(d)}
@@ -173,6 +173,16 @@
             }
             &.project-name, &.customer {
                 min-width: 250px;
+                width: 50%;
+            }
+            /* Fits the content (the input), so the project and customer columns take the rest. */
+            &.fit {
+                width: 1%;
+                white-space: nowrap;
+            }
+            &.task {
+                width: 84px;
+                min-width: 84px;
             }
             & button {
                 display: flex;
@@ -201,6 +211,10 @@
             &.number {
                 text-align: right;
             }
+            &.task {
+                width: 84px;
+                min-width: 84px;
+            }
         }
     }
     button.text-link {
@@ -223,11 +237,12 @@
     tr.overdue td {
         background-color: #fff7f4;
     }
+    /* The warning icon sits at the left and the count at the right, with or without the icon. */
     div.tasks {
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        gap: 6px;
+        gap: 12px;
     }
     span.due {
         display: flex;
@@ -258,5 +273,8 @@
         padding: 4px 8px;
         border-radius: 4px;
         border: 1px solid #bbb;
+    }
+    input.note {
+        width: 240px;
     }
 </style>
