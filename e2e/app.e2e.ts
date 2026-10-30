@@ -92,6 +92,81 @@ test('tasks can be added and checked off', async ({ page }) => {
 	await expect(openTasks).toHaveText('0');
 });
 
+// The local date a number of days from today, as 'YYYY-MM-DD' (what the date input takes).
+const dayFromToday = (days: number) => {
+	const d = new Date();
+	d.setDate(d.getDate() + days);
+	return d.toLocaleDateString('sv-SE');
+};
+
+test('a warning icon shows when a task is late or due soon, and the row is tinted for today and late', async ({ page }) => {
+	const name = unique('due');
+	await createProject(page, name);
+
+	const row = rowOf(page, name);
+	const overdue = row.getByTitle('Has overdue tasks');
+	const soon = row.getByTitle('Has tasks due soon');
+	// The row says how urgent it is in `data-due`, and the cells carry its background. The test
+	// checks that a tint is there and that the two tints differ, not which colors they are.
+	const cell = row.getByRole('cell').first();
+	const white = 'rgb(255, 255, 255)';
+	const background = () => cell.evaluate((el) => getComputedStyle(el).backgroundColor);
+	const due = async (level: string | null, tinted: boolean) => {
+		if (level) await expect(row).toHaveAttribute('data-due', level);
+		else await expect(row).not.toHaveAttribute('data-due');
+		if (tinted) await expect(cell).not.toHaveCSS('background-color', white);
+		else await expect(cell).toHaveCSS('background-color', white);
+	};
+	await expect(overdue).toHaveCount(0);
+	await expect(soon).toHaveCount(0);
+	await due(null, false);
+
+	await row.getByRole('button', { name: /^\d+$/ }).click();
+	const dialog = page.getByRole('dialog');
+	const addTask = async (title: string, days: number) => {
+		await dialog.getByPlaceholder('Add a task').fill(title);
+		await dialog.locator('input[type="date"]').fill(dayFromToday(days));
+		await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+		await expect(dialog.getByText(title)).toBeVisible();
+	};
+	const item = (title: string) => dialog.getByRole('listitem').filter({ hasText: title });
+
+	// A task due next week does not warn.
+	await addTask('Later', 7);
+	await expect(overdue).toHaveCount(0);
+	await expect(soon).toHaveCount(0);
+	await due(null, false);
+
+	// Tomorrow gets the icon only.
+	await addTask('Tomorrow', 1);
+	await expect(soon).toHaveCount(1);
+	await due('soon', false);
+
+	// Today tints the row.
+	await addTask('Today', 0);
+	await expect(soon).toHaveCount(1);
+	await due('today', true);
+	const todayTint = await background();
+
+	// A late task turns the icon red and tints the row in another color.
+	await addTask('Yesterday', -1);
+	await expect(overdue).toHaveCount(1);
+	await expect(soon).toHaveCount(0);
+	await due('overdue', true);
+	expect(await background()).not.toBe(todayTint);
+
+	// Checking tasks off steps back down, until nothing is left to warn about.
+	await item('Yesterday').getByRole('checkbox').check();
+	await expect(overdue).toHaveCount(0);
+	await due('today', true);
+	await item('Today').getByRole('checkbox').check();
+	await expect(soon).toHaveCount(1);
+	await due('soon', false);
+	await item('Tomorrow').getByRole('checkbox').check();
+	await expect(soon).toHaveCount(0);
+	await due(null, false);
+});
+
 test('the list can be filtered by text and cleared', async ({ page }) => {
 	const first = unique('filter-a');
 	const second = unique('filter-b');

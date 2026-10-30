@@ -6,9 +6,11 @@
     import LostDialog from './LostDialog.svelte';
     import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
     import RowMenu from './RowMenu.svelte';
-    import { ChevronDown, ChevronUp, ChevronsUpDown } from '@lucide/svelte';
+    import { onMount } from 'svelte';
+    import { ChevronDown, ChevronUp, ChevronsUpDown, TriangleAlert } from '@lucide/svelte';
     import { m } from '../paraglide/messages.js';
     import { OPEN_STATUSES, statusLabel, type ProjectStatus } from '../status';
+    import { dueLevel } from '../due';
     import { projectLabel, type ProjectRow as Row, type Sort, type SortKey } from '../project';
 
     type Props = {
@@ -38,6 +40,15 @@
     const closeDialog = () => dialog = null;
     const openTaskCount = (row: Row) =>
         tasks.filter((t) => t.projectId === row.id && !t.doneAt).length;
+    // The viewer's local date. It is known only in the browser, so the warning appears after the
+    // page loads instead of being rendered with the server's date.
+    let today = $state<string | null>(null);
+    onMount(() => {
+        today = new Date().toLocaleDateString('sv-SE');
+    });
+    const dueOf = (row: Row) =>
+        today === null ? null : dueLevel(
+            tasks.filter((t) => t.projectId === row.id && !t.doneAt).map((t) => t.dueDate), today);
     const isOpen = (status: ProjectStatus) => (OPEN_STATUSES as readonly string[]).includes(status);
     const ariaSort = (key: SortKey) =>
         sort?.key !== key ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending';
@@ -78,7 +89,8 @@
     </thead>
     <tbody>
         {#each data as d (d.id)}
-            <tr>
+            {@const due = dueOf(d)}
+            <tr class={due} data-due={due}>
                 <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{@render shown(d.name)}</button></td>
                 <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{@render shown(d.customer)}</button></td>
                 <td>
@@ -94,7 +106,14 @@
                     {/if}
                 </td>
                 <td class="number">
-                    <button class="text-link" onclick={() => dialog = { kind: 'task', row: d }}>{openTaskCount(d)}</button>
+                    <div class="tasks">
+                        {#if due}
+                            <span class="due {due}" title={due === 'overdue' ? m.task_overdue() : m.task_due_soon()}>
+                                <TriangleAlert size={16} />
+                            </span>
+                        {/if}
+                        <button class="text-link" onclick={() => dialog = { kind: 'task', row: d }}>{openTaskCount(d)}</button>
+                    </div>
                 </td>
                 <td>
                     <input type="text" class="note" value={d.note}
@@ -195,6 +214,28 @@
         cursor: pointer;
         &:has(span.not-set) {
             border-color: #ccc;
+        }
+    }
+    /* A row is tinted when a task is due today or late. The cells carry their own background. */
+    tr.today td {
+        background-color: #fffcea;
+    }
+    tr.overdue td {
+        background-color: #fff7f4;
+    }
+    div.tasks {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+    }
+    span.due {
+        display: flex;
+        &.overdue {
+            color: #d33;
+        }
+        &.today, &.soon {
+            color: #d98200;
         }
     }
     span.not-set {

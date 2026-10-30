@@ -44,6 +44,8 @@
 	"mark_lost": "Lost",
 	"reopen": "Reopen",
 	"not_set": "Not set",
+	"task_overdue": "Has overdue tasks",
+	"task_due_soon": "Has tasks due soon",
 	"page_range": "{from}–{to} of {total}",
 	"previous_page": "Previous page",
 	"next_page": "Next page",
