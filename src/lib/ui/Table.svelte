@@ -43,6 +43,15 @@
         sort?.key !== key ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending';
 </script>
 
+<!-- A name that is not set is shown dimmed, still clickable so it can be filled in. -->
+{#snippet shown(value: string)}
+    {#if value}
+        {value}
+    {:else}
+        <span class="not-set">{m.not_set()}</span>
+    {/if}
+{/snippet}
+
 {#snippet sortButton(key: SortKey, label: string)}
     <button onclick={() => onsort?.(key)}>
         {label}
@@ -70,8 +79,8 @@
     <tbody>
         {#each data as d (d.id)}
             <tr>
-                <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{projectLabel(d)}</button></td>
-                <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{d.customer}</button></td>
+                <td><button class="text-link" onclick={() => dialog = { kind: 'project', row: d }}>{@render shown(d.name)}</button></td>
+                <td><button class="text-link" onclick={() => dialog = { kind: 'customer', row: d }}>{@render shown(d.customer)}</button></td>
                 <td>
                     {#if isOpen(d.status)}
                         <select value={d.status}
@@ -184,6 +193,13 @@
         border-bottom: 2px solid #999;
         padding: 0 2px 2px 2px;
         cursor: pointer;
+        &:has(span.not-set) {
+            border-color: #ccc;
+        }
+    }
+    span.not-set {
+        font-weight: 500;
+        color: #aaa;
     }
     span.closed {
         font-size: 14px;

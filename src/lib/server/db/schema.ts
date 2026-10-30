@@ -13,7 +13,7 @@ const createdAt = () =>
 
 export const project = sqliteTable('project', {
 	id: id(),
-	// Optional. When empty, the UI shows the customer name instead.
+	// Optional. When empty, the UI shows "Not set".
 	name: text('name').notNull().default(''),
 	projectDetail: text('project_detail').notNull().default(''),
 	customer: text('customer').notNull(),

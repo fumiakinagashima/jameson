@@ -2,6 +2,7 @@
     import Table from "#lib/ui/Table.svelte";
     import Filter from "#lib/ui/Filter.svelte";
     import TaskDialog from "#lib/ui/TaskDialog.svelte";
+    import Pager from "#lib/ui/Pager.svelte";
     import { Plus, Download, ListTodo } from '@lucide/svelte';
     import { deserialize } from '$app/forms';
     import { goto, refreshAll } from '$app/navigation';
@@ -17,7 +18,8 @@
 
     // The filter and the sort live in the URL (`?q=&status=&sort=&dir=`), so they survive
     // reloads and can be shared.
-    type View = { text: string; status: string; sort: Sort };
+    // `page` is left out when it is the first one. Changing the filter or the sort starts over from it.
+    type View = { text: string; status: string; sort: Sort; page?: number };
 
     const viewQuery = (view: View) => {
         const params = new SvelteURLSearchParams();
@@ -27,6 +29,7 @@
             params.set('sort', view.sort.key);
             params.set('dir', view.sort.dir);
         }
+        if (view.page && view.page > 1) params.set('page', String(view.page));
         const query = params.toString();
         return query ? `?${query}` : '';
     };
@@ -45,8 +48,10 @@
         showView({ ...data.filter, sort });
     };
 
-    // Downloads the projects on screen, in the same order. The response is an attachment,
-    // so the browser saves it and stays on this page.
+    const showPage = (page: number) => showView({ ...data.filter, sort: data.sort, page });
+
+    // Downloads every project the filter matches, in the same order, not just this page. The
+    // response is an attachment, so the browser saves it and stays on this page.
     const downloadCsv = () => {
         window.location.assign(`/export.csv${viewQuery({ ...data.filter, sort: data.sort })}`);
     };
@@ -117,6 +122,7 @@
             ontaskadd={(projectId, input) => act('addTask', { projectId, ...input })}
             ontaskdelete={(task) => act('deleteTask', { id: task.id })} />
     </div>
+    <Pager page={data.page} pageCount={data.pageCount} total={data.total} onpage={showPage} />
 
 </div>
 

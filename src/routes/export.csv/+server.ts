@@ -24,6 +24,7 @@ const HEADER = [
 ];
 
 // Downloads the projects the list is showing, so `?q=`, `?status=` and `?sort=` apply here too.
+// `?page=` does not: the file holds every page.
 export const GET: RequestHandler = async ({ url }) => {
 	const { where, orderBy } = parseListQuery(url);
 

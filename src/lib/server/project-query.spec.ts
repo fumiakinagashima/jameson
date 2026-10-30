@@ -23,6 +23,22 @@ describe('parseListQuery: the filter', () => {
 	});
 });
 
+describe('parseListQuery: the page', () => {
+	it('is the first page by default', () => {
+		expect(parse().page).toBe(1);
+	});
+
+	it('reads the page number', () => {
+		expect(parse('page=3').page).toBe(3);
+	});
+
+	it('falls back to the first page for anything that is not a page number', () => {
+		for (const bad of ['0', '-2', '1.5', 'abc', '', '99999999999999999999']) {
+			expect(parse(`page=${bad}`).page).toBe(1);
+		}
+	});
+});
+
 describe('parseListQuery: the sort', () => {
 	it('is the default order (newest first) when no sort is given', () => {
 		expect(parse().sort).toBeNull();

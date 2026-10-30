@@ -1,11 +1,11 @@
 import { fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../lib/server/db';
 import { project, task } from '../lib/server/db/schema';
 import { readForm } from '../lib/server/form';
 import { parseListQuery } from '../lib/server/project-query';
-import { MINOR_UNIT, projectLabel } from '../lib/project';
+import { MINOR_UNIT, PAGE_SIZE, projectLabel } from '../lib/project';
 import { m } from '../lib/paraglide/messages.js';
 import { forms } from '../lib/schemas';
 import type { Actions, PageServerLoad } from './$types';
@@ -16,7 +16,11 @@ const actor = (locals: App.Locals) => locals.user?.sub ?? null;
 
 export const load: PageServerLoad = async ({ url }) => {
 	const db = database();
-	const { filter, sort, where, orderBy } = parseListQuery(url);
+	const { filter, sort, page: requestedPage, where, orderBy } = parseListQuery(url);
+
+	const total = (await db.select({ total: count() }).from(project).where(where).get())?.total ?? 0;
+	const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+	const page = Math.min(requestedPage, pageCount);
 
 	const projects = await db
 		.select({
@@ -30,14 +34,15 @@ export const load: PageServerLoad = async ({ url }) => {
 		})
 		.from(project)
 		.where(where)
-		.orderBy(...orderBy);
+		.orderBy(...orderBy)
+		.limit(PAGE_SIZE)
+		.offset((page - 1) * PAGE_SIZE);
 
 	const tasks = await db
 		.select({
 			id: task.id,
 			projectId: task.projectId,
 			projectName: project.name,
-			customer: project.customer,
 			title: task.title,
 			dueDate: task.dueDate,
 			doneAt: task.doneAt
@@ -48,10 +53,13 @@ export const load: PageServerLoad = async ({ url }) => {
 	return {
 		filter,
 		sort,
+		page,
+		pageCount,
+		total,
 		projects,
-		tasks: tasks.map(({ customer, projectName, doneAt, ...t }) => ({
+		tasks: tasks.map(({ projectName, doneAt, ...t }) => ({
 			...t,
-			projectName: projectLabel({ name: projectName, customer }),
+			projectName: projectLabel({ name: projectName }),
 			doneAt: doneAt ? doneAt.toISOString() : null
 		}))
 	};
@@ -63,8 +71,8 @@ export const actions: Actions = {
 		await database()
 			.insert(project)
 			.values({
-				name: 'New Project',
-				customer: 'Cutomer',
+				name: '',
+				customer: '',
 				createdBy: by,
 				updatedBy: by
 			});

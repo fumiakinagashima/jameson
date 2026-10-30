@@ -43,6 +43,10 @@
 	"mark_won": "Won",
 	"mark_lost": "Lost",
 	"reopen": "Reopen",
+	"not_set": "Not set",
+	"page_range": "{from}–{to} of {total}",
+	"previous_page": "Previous page",
+	"next_page": "Next page",
 	"won_date": "Won date",
 	"lost_date": "Lost date",
 

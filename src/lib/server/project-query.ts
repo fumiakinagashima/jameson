@@ -3,10 +3,10 @@ import { SORT_KEYS, type Sort } from '../project';
 import { OPEN_STATUSES, PROJECT_STATUSES } from '../status';
 import { project } from './db/schema';
 
-// What each sort key orders by. The project column sorts by what the list shows (the name,
-// or the customer when there is no name). Status sorts in pipeline order, not alphabetically.
+// What each sort key orders by. The project column sorts by the name; projects
+// without one come first. Status sorts in pipeline order, not alphabetically.
 const sortColumns = {
-	project: sql`lower(coalesce(nullif(${project.name}, ''), ${project.customer}))`,
+	project: sql`lower(${project.name})`,
 	customer: sql`lower(${project.customer})`,
 	status: sql`case ${project.status} ${sql.join(
 		PROJECT_STATUSES.map((s, i) => sql`when ${s} then ${i}`),
@@ -14,8 +14,9 @@ const sortColumns = {
 	)} end`
 };
 
-// What the list shows, read from `?status=`, `?q=`, `?sort=` and `?dir=`. Shared by the list
-// and the CSV export, so a download matches what is on screen.
+// What the list shows, read from `?status=`, `?q=`, `?sort=`, `?dir=` and `?page=`. Shared by the
+// list and the CSV export, so a download matches what is on screen, except that the export
+// holds every page.
 export const parseListQuery = (url: URL) => {
 	// Open projects by default. `?status=` shows one status, including won and lost,
 	// and `?status=all` shows every project.
@@ -34,7 +35,12 @@ export const parseListQuery = (url: URL) => {
 	const sort: Sort = key ? { key, dir: url.searchParams.get('dir') === 'desc' ? 'desc' : 'asc' } : null;
 	const direction = sort?.dir === 'desc' ? desc : asc;
 
+	// The page asked for; the list clamps it to the last page once it knows how many there are.
+	const requestedPage = Number(url.searchParams.get('page'));
+	const page = Number.isSafeInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
+
 	return {
+		page,
 		filter: { text, status: all ? 'all' : (status ?? '') },
 		sort,
 		where: and(

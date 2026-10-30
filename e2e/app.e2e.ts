@@ -24,15 +24,16 @@ const createProject = async (page: Page, name: string, customer = name) => {
 	await open(page);
 	await page.getByRole('button', { name: 'Create' }).click();
 
-	const created = rowOf(page, 'New Project');
-	await expect(created).toHaveCount(1);
-	await created.getByRole('button', { name: 'New Project' }).click();
+	// A new project has no names yet, and the newest project is the first row.
+	const created = page.getByRole('row').nth(1);
+	await expect(created.getByRole('button', { name: 'Not set' })).toHaveCount(2);
+	await created.getByRole('button', { name: 'Not set' }).first().click();
 	await page.getByPlaceholder('Input project name').fill(name);
 	await page.getByRole('button', { name: 'OK' }).click();
 
 	const renamed = rowOf(page, name);
 	await expect(renamed).toHaveCount(1);
-	await renamed.getByRole('button', { name: 'Cutomer' }).click();
+	await renamed.getByRole('button', { name: 'Not set' }).click();
 	await page.getByPlaceholder('Input customer name').fill(customer);
 	await page.getByRole('button', { name: 'OK' }).click();
 	await expect(renamed.getByRole('button', { name: customer, exact: true })).toBeVisible();
@@ -203,4 +204,79 @@ test('the CSV download holds what the list shows', async ({ page }) => {
 	expect(header.split(',')[0]).toBe('Project');
 	expect(rows).toHaveLength(1);
 	expect(rows[0]).toContain(name);
+});
+
+test('a project without names shows a dimmed "Not set"', async ({ page }) => {
+	await open(page);
+	await page.getByRole('button', { name: 'Create' }).click();
+
+	const created = page.getByRole('row').nth(1);
+	const notSet = created.getByText('Not set');
+	// Both the project and the customer are blank, and each can still be clicked to fill in.
+	await expect(notSet).toHaveCount(2);
+	await expect(notSet.first()).toHaveCSS('color', 'rgb(170, 170, 170)');
+
+	// A customer name does not stand in for the missing project name.
+	const customer = unique('notset-customer');
+	await created.getByRole('button', { name: 'Not set' }).last().click();
+	await page.getByPlaceholder('Input customer name').fill(customer);
+	await page.getByRole('button', { name: 'OK' }).click();
+	const row = rowOf(page, customer);
+	await expect(row.getByRole('button', { name: 'Not set' })).toHaveCount(1);
+	await expect(row.getByRole('button', { name: customer, exact: true })).toHaveCount(1);
+
+	// Name it, so this row does not stay blank for the tests that look at the first row.
+	const name = unique('notset');
+	await row.getByRole('button', { name: 'Not set' }).click();
+	await page.getByPlaceholder('Input project name').fill(name);
+	await page.getByRole('button', { name: 'OK' }).click();
+	await expect(rowOf(page, name)).toHaveCount(1);
+	await expect(rowOf(page, name).getByRole('button', { name: 'Not set' })).toHaveCount(0);
+});
+
+// Last, because it leaves many blank projects behind, and the other tests expect the project
+// they just created to be the first row.
+test('the list is paged, and the CSV holds every page', async ({ page }) => {
+	await open(page);
+	for (let i = 0; i < 51; i++) {
+		// SvelteKit only takes an action as a form, so the request needs a body.
+		const res = await page.request.post('/?/createProject', {
+			headers: { Origin: 'http://localhost:4174', 'x-sveltekit-action': 'true' },
+			form: { create: '1' }
+		});
+		expect(res.status()).toBe(200);
+	}
+	await page.reload();
+	await page.waitForLoadState('networkidle');
+
+	// A header row and 50 projects.
+	await expect(page.getByRole('row')).toHaveCount(51);
+	const range = page.getByText(/^1–50 of \d+$/);
+	await expect(range).toBeVisible();
+	const total = Number((await range.textContent())!.split(' of ')[1]);
+	expect(total).toBeGreaterThanOrEqual(51);
+
+	const previous = page.getByRole('button', { name: 'Previous page' });
+	const next = page.getByRole('button', { name: 'Next page' });
+	await expect(previous).toBeDisabled();
+
+	await next.click();
+	await expect(page).toHaveURL(/page=2/);
+	await expect(page.getByText(new RegExp(`^51–${Math.min(100, total)} of ${total}$`))).toBeVisible();
+	await expect(previous).toBeEnabled();
+
+	await previous.click();
+	await expect(page).not.toHaveURL(/page=/);
+	await expect(range).toBeVisible();
+
+	// The download holds all of them, whichever page the list is on.
+	await next.click();
+	await expect(page).toHaveURL(/page=2/);
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('button', { name: 'CSV Download' }).click()
+	]);
+	const csv = await readFile((await download.path())!, 'utf8');
+	const [, ...rows] = csv.replace(/^\uFEFF/, '').trim().split('\r\n');
+	expect(rows).toHaveLength(total);
 });

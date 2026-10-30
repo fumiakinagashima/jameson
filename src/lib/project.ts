@@ -1,3 +1,4 @@
+import { m } from './paraglide/messages.js';
 import type { ProjectStatus } from './status';
 
 export type ProjectRow = {
@@ -19,5 +20,9 @@ export type Sort = { key: SortKey; dir: 'asc' | 'desc' } | null;
 // assume two decimal places.
 export const MINOR_UNIT = 100;
 
-// The project name is optional; fall back to the customer name.
-export const projectLabel = (p: Pick<ProjectRow, 'name' | 'customer'>) => p.name || p.customer;
+// Projects per page of the list. The CSV export ignores it and holds every project.
+export const PAGE_SIZE = 50;
+
+// The project name is optional. A project without one is shown as "Not set" (the table also
+// dims it), so a title or a dialog never ends up blank.
+export const projectLabel = (p: Pick<ProjectRow, 'name'>) => p.name || m.not_set();
