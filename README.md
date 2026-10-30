@@ -10,17 +10,19 @@ You deploy it to your own Cloudflare account, so your data stays in your own dat
 
 - **One list of projects** with customer, status and a note. Details open in dialogs, so the page stays small.
 - **Statuses**: Lead, Proposal, Negotiation, Pending (open), and Won, Lost (closed).
-  - Won and Lost are set from the row menu (`...`), where you enter the date and the amount or the reason.
+  - Won and Lost are set from the row menu (`...`), where you enter the date and the amount or the reason. The same menu has Reopen for a closed project; it goes back to Negotiation and the closing date, amount and note are cleared.
 - **Tasks per project**: next actions with a due date. Done tasks stay as a history. A cross-project task list is one click away.
 - **Filter**: free-text search over names, notes and details, plus a status filter. The filter lives in the URL, so a filtered view can be bookmarked or shared.
 - **Sorting** by project, customer or status (click a column header: ascending, descending, then back to newest first). Status sorts in pipeline order. The sort is part of the URL too.
-- **CSV export** of whatever the list is showing, in the same order. The CSV is always in English.
+- **Paging**: the list shows 50 projects per page, with previous and next buttons. The page is part of the URL too.
+- **CSV export** of every project the filter matches, in the same order, whichever page you are on. The CSV is always in English.
+- **Blank names are shown as they are**: a project or customer without a name shows a dimmed "Not set". There is no fallback to another field.
 - **Translations**: the language follows the browser's setting, with a plain JSON file per language. Only English exists so far; see [Adding a language](#adding-a-language).
 - **Sign-in with Cloudflare Access**: no passwords or user tables in the app. The header shows who is signed in, with a logout link.
 
 ### What it deliberately does not do
 
-Jameson is for teams of about 1 to 5 people, so some usual CRM features are left out on purpose: no owner/assignee field, no win-probability forecast, no user management, no quotes or invoices. Everyone sees every project.
+Jameson is built for companies of up to roughly 60 people, and it has to stay usable for a team of one to five. To stay small, some usual CRM features are left out on purpose: no owner/assignee field, no win-probability forecast, no user management, no quotes or invoices. Everyone sees every project.
 
 ## Tech stack
 
@@ -91,8 +93,8 @@ Do these in order. Until step 6 is done, the deployed app answers every request 
 
 5. **Protect it with Cloudflare Access.** Dashboard labels change from time to time, so look for the names in quotes.
    - Open Zero Trust and finish the first-time setup. You choose a team name, which becomes `https://<team-name>.cloudflareaccess.com`. The free plan may ask for a payment method.
-   - If you want people to sign in with an emailed code, add "One-time PIN" under Integrations, Identity providers. It is not enabled by default.
-   - Put the Worker behind Access. For `workers.dev`, open the Worker's Settings, Domains & Routes, and manage its Access settings; use the scope "All traffic". For your own domain, create a self-hosted application for that hostname. Add an "Allow" policy that lists the email addresses that may sign in.
+   - If people without a Cloudflare account need to sign in, add "One-time PIN" under Integrations, Identity providers. It is not enabled by default. This is a Cloudflare setting only; Jameson needs no change, because it just verifies the token Access issues, whatever the sign-in method.
+   - Put the Worker behind Access. For `workers.dev`, open the Worker's Settings, Domains & Routes, and manage its Access settings; use the scope "All traffic". For your own domain, create a self-hosted application for that hostname. Add an "Allow" policy that lists the email addresses that may sign in. Enabling a sign-in method does not let anyone in by itself: only the people the policy allows can get through.
 
 6. **Tell the app which Access application to trust.** In `wrangler.jsonc`, set:
 
@@ -120,6 +122,16 @@ Open your URL, sign in through Access, and you should see the list.
 | `DB` | `wrangler.jsonc` `d1_databases` | The D1 binding. |
 
 If the team domain or the AUD tag is wrong, every request is rejected with `403`. Run `bunx wrangler tail` while you load the page to see why (for example `unexpected "aud" claim value`).
+
+### Logs
+
+`wrangler.jsonc` turns on [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) (`observability.enabled`). After a deploy, open your Worker in the dashboard and look under Observability to search the logs later, for example why a request was rejected with `403`. How long logs are kept and how many are stored depends on your Cloudflare plan. Jameson does not write email addresses or tokens to the logs; keep it that way if you add logging.
+
+## Security
+
+- Access is the only door. The Worker verifies the Access token on every request and answers `403` otherwise, so keep `workers_dev` off if you do not use it, and leave `preview_urls` `false`.
+- Keep the Allow policy narrow: list the people or the company domain that should get in, and do not allow "everyone".
+- Jameson does not handle legal retention or compliance requirements (for example electronic record-keeping laws). If you need them, use a service or a change of your own for that part.
 
 ## Development
 
@@ -163,7 +175,6 @@ This is an alpha. Known gaps:
 
 - English UI only. The translation setup is in place, but no other language has been written yet.
 - The currency is not configurable; amounts assume two decimal places.
-- A Won or Lost project cannot be reopened yet.
 - No highlighting or reminders for tasks that are due soon.
 - No file attachments.
 - The tests cover the main logic and the main screens, not every case. The SQL behind filtering and sorting is only tested through the screens.

@@ -12,6 +12,9 @@
 	},
 	"workers_dev": false,
 	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
 	"vars": {
 		"ACCESS_TEAM_DOMAIN": "https://alcogy.cloudflareaccess.com",
 		"ACCESS_AUD": "25b9f9e0ab664bb9ac55e7c5312f268887fa7761ec3620110ecfce970b6a1a83"
