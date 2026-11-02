@@ -22,7 +22,7 @@ You deploy it to your own Cloudflare account, so your data stays in your own dat
 
 ### What it deliberately does not do
 
-Jameson is built for companies of up to roughly 60 people, and it has to stay usable for a team of one to five. To stay small, some usual CRM features are left out on purpose: no owner/assignee field, no win-probability forecast, no user management, no quotes or invoices. Everyone sees every project.
+Jameson is sized by data, not by headcount: it is meant for whatever number of customers and projects a single Cloudflare D1 database can handle (a paid Cloudflare plan stretches that further), and it works just as well for a team of one. Moving the database to something else (Neon, Supabase, ...) or the whole thing to another infrastructure (AWS, ...) is not supported out of the box; do it yourself, or ask for paid customization. To stay small, some usual CRM features are left out on purpose: no owner/assignee field, no win-probability forecast, no user management, no quotes or invoices. Everyone sees every project.
 
 ## Tech stack
 
@@ -182,7 +182,7 @@ This is an alpha. Known gaps:
 
 ## Feedback
 
-Bug reports and ideas are welcome as GitHub issues. Jameson is meant to stay small, so a feature may be declined if it makes the tool bigger than a handful of people need.
+Bug reports and ideas are welcome as GitHub issues. Jameson is meant to stay small, so a feature may be declined if it makes the tool bigger than it needs to be.
 
 ## License
 
